@@ -15,7 +15,7 @@ dependencyResolutionManagement {
 }
 
 // ── Change this to your project name ──────────────
-rootProject.name = "WebShell"
+rootProject.name = "PebbleDo"
 // ──────────────────────────────────────────────────
 
 include(":app")
