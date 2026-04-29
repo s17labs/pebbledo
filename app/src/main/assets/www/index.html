@@ -28,9 +28,19 @@
     font-display: swap;
     src: url(fonts/inter-600.woff2) format('woff2');
   }
+
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 button{font-family:inherit;cursor:pointer}
+
+/* FIX: remove all focus rings globally — no default browser outlines on Android */
+*:focus,
+*:focus-visible,
+*:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
 
 :root{
   --bg:#1c1c22;--nb:#141418;--sel:rgba(255,255,255,0.08);
@@ -65,8 +75,19 @@ body{
   user-select:none;
   -webkit-user-select:none;
 }
-/* Re-enable selection for text inputs */
-textarea,input{user-select:text;-webkit-user-select:text;}
+
+/* Re-enable selection and native controls for text inputs */
+textarea,input{
+  user-select:text;
+  -webkit-user-select:text;
+  /* FIX: theme-coloured selection handles and cursor on Android WebView */
+  accent-color:var(--fill);
+  caret-color:var(--caret);
+}
+
+/* Text highlight colour */
+::selection{background:var(--fill);color:#fff}
+::-moz-selection{background:var(--fill);color:#fff}
 
 /* ── Navbar ─────────────────────────────── */
 .nb{
@@ -96,16 +117,17 @@ textarea,input{user-select:text;-webkit-user-select:text;}
 .nb-btn:active,.nb-btn.on{color:var(--icona);background:var(--sel)}
 
 /* ── Views ──────────────────────────────── */
-.view{display:none;flex-direction:column;flex:1;overflow:hidden;position:relative}
+.view{
+  display:none;flex-direction:column;flex:1;
+  overflow:hidden;
+  /* position:relative so the FAB inside vArch can be absolutely positioned */
+  position:relative;
+}
 .view.active{display:flex}
 
 /* ── Task list ──────────────────────────── */
 .tl{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 0 12px}
 .tl::-webkit-scrollbar{display:none}
-
-/* Text selection uses accent colour */
-::selection{background:var(--fill);color:#fff}
-::-moz-selection{background:var(--fill);color:#fff}
 
 /* ── Task row ───────────────────────────── */
 .row{
@@ -121,7 +143,8 @@ textarea,input{user-select:text;-webkit-user-select:text;}
 }
 .row.editing{background:var(--sel)}
 .row.drag-src{opacity:0;pointer-events:none}
-/* Drop indicator — full-width line, no border-radius, no layout impact */
+
+/* Drop indicator */
 .drop-line{
   display:block;height:2px;background:var(--dline);
   margin:-1px 8px;flex-shrink:0;border-radius:0;
@@ -149,33 +172,27 @@ textarea,input{user-select:text;-webkit-user-select:text;}
   transition:color .38s ease;
 }
 .inp{
-  flex:1;background:none;border:none;outline:none;
-  font-size:var(--fs);font-family:inherit;color:var(--tx);caret-color:var(--caret);
+  flex:1;background:none;border:none;
+  font-size:var(--fs);font-family:inherit;color:var(--tx);
+  caret-color:var(--caret);
   padding:13px 0;resize:none;overflow:hidden;line-height:1.45;min-width:0;
 }
 .inp::placeholder{color:var(--circ)}
 
-/* ── Strike line (animates L→R over text) ─ */
+/* ── Strike line ─────────────────────────── */
 .sline{
-  position:absolute;
-  left:52px;
-  right:40px;
-  top:50%;
-  height:1.5px;
-  background:var(--muted);
-  transform:scaleX(0);
-  transform-origin:left center;
-  pointer-events:none;
-  transition:transform .42s cubic-bezier(.22,1,.36,1);
+  position:absolute;left:52px;right:40px;top:50%;
+  height:1.5px;background:var(--muted);
+  transform:scaleX(0);transform-origin:left center;
+  pointer-events:none;transition:transform .42s cubic-bezier(.22,1,.36,1);
 }
 .sline.grow{transform:scaleX(1)}
 
-/* ── Drag handle — opacity matches empty-2 ─ */
+/* ── Drag handle ─────────────────────────── */
 .dh{
   width:36px;height:48px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
-  color:var(--icon);font-size:13px;
-  opacity:.42;
+  color:var(--icon);font-size:13px;opacity:.42;
   cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;
 }
 .dh:active{cursor:grabbing;opacity:.7}
@@ -218,9 +235,15 @@ textarea,input{user-select:text;-webkit-user-select:text;}
 .arch-empty p{font-size:14px;opacity:.55}
 
 /* ── Archive FAB ─────────────────────────── */
+/*
+  FIX: The FAB now lives INSIDE #vArch (position:absolute).
+  It enters the screen with the archive view slide animation,
+  so it "finds its place" before becoming visible — no position jerk.
+  The opacity transition handles the fade-in separately.
+*/
 #archFab{
-  position:fixed;
-  bottom:calc(20px + env(safe-area-inset-bottom));
+  position:absolute;
+  bottom:20px;
   right:16px;
   width:52px;height:52px;
   border-radius:var(--r);
@@ -275,40 +298,27 @@ textarea,input{user-select:text;-webkit-user-select:text;}
 .fp.serif{font-family:Georgia,serif}
 .fp.inter{font-family:'Inter',sans-serif}
 .sw{display:flex;align-items:center;gap:10px}
-input[type=range]{flex:1;-webkit-appearance:none;height:3px;border-radius:2px;background:var(--div);outline:none;cursor:pointer}
+input[type=range]{flex:1;-webkit-appearance:none;height:3px;border-radius:2px;background:var(--div);cursor:pointer}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--fill);border:2px solid var(--bg);box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer}
 .sv{font-size:12px;color:var(--ttl);min-width:26px;text-align:right}
 .about-row{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--sel);border:none;border-radius:var(--r);color:var(--ttl);font-size:13px;transition:all .12s;width:100%;text-align:left}
 .about-row:active{background:var(--fill);color:#fff}
 .about-row i{font-size:15px}
-.ss-divider{
-  height:1px;
-  background:var(--div);
-  margin:4px 0 18px;
-}
+.ss-divider{height:1px;background:var(--div);margin:4px 0 18px}
 .haptics-row{
   display:flex;align-items:center;justify-content:space-between;
-  padding:11px 14px;
-  background:var(--sel);
-  border-radius:var(--r);
-  cursor:pointer;
-  -webkit-tap-highlight-color:transparent;
+  padding:11px 14px;background:var(--sel);border-radius:var(--r);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
   transition:background .12s, border-radius .25s;
 }
 .haptics-row:active{background:var(--div)}
-.haptics-label{
-  display:flex;align-items:center;gap:10px;
-  font-size:13px;color:var(--ttl);
-}
+.haptics-label{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ttl)}
 .haptics-label i{font-size:15px}
 
 /* Confirm dialog */
 .confirm-msg{font-size:14px;color:var(--ttl);line-height:1.5;margin-bottom:20px;margin-top:4px}
 .confirm-btns{display:flex;gap:10px}
-.confirm-btns button{
-  flex:1;padding:11px;border:none;border-radius:var(--r);
-  font-size:14px;font-weight:600;transition:opacity .15s;
-}
+.confirm-btns button{flex:1;padding:11px;border:none;border-radius:var(--r);font-size:14px;font-weight:600;transition:opacity .15s}
 .confirm-btns button:active{opacity:.75}
 .btn-cancel{background:var(--sel);color:var(--tx)}
 .btn-danger{background:#c03040;color:#fff}
@@ -341,104 +351,44 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 @keyframes tswap{from{opacity:0}to{opacity:1}}
 .t-anim{animation:tswap .18s ease both}
 @keyframes eIn{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
-@keyframes slineReverse{from{transform:scaleX(1)}to{transform:scaleX(0)}}
-.sline-rev{transform-origin:right center!important;animation:slineReverse .42s cubic-bezier(.22,1,.36,1) both}
 .e-in{animation:eIn .2s ease both}
 .e2.e-in{animation-delay:50ms}
 .e3.e-in{animation-delay:100ms}
+@keyframes slineReverse{from{transform:scaleX(1)}to{transform:scaleX(0)}}
+.sline-rev{transform-origin:right center!important;animation:slineReverse .42s cubic-bezier(.22,1,.36,1) both}
 
 /* ── Onboarding ─────────────────────────── */
-.onboard-dlg{
-  display:flex;flex-direction:column;
-  align-items:center;text-align:center;
-  padding:32px 24px 24px;gap:0;
-  min-height:360px;
-}
-.ob-page{
-  display:none;flex-direction:column;align-items:center;
-  flex:1;width:100%;
-  animation:obFadeIn .22s ease both;
-}
+.onboard-dlg{display:flex;flex-direction:column;align-items:center;text-align:center;padding:32px 24px 24px;gap:0;min-height:360px}
+.ob-page{display:none;flex-direction:column;align-items:center;flex:1;width:100%;animation:obFadeIn .22s ease both}
 .ob-page.active{display:flex}
 @keyframes obFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.ob-icon-wrap{
-  width:96px;height:96px;border-radius:calc(var(--r) + 14px);
-  background:var(--sel);
-  display:flex;align-items:center;justify-content:center;
-  margin-bottom:24px;
-  transition:border-radius .25s;
-}
-.ob-app-icon{
-  width:72px;height:72px;border-radius:calc(var(--r) + 8px);
-  background:var(--fill);
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 6px 20px rgba(0,0,0,.2);
-  transition:border-radius .25s;
-}
+.ob-icon-wrap{width:96px;height:96px;border-radius:calc(var(--r) + 14px);background:var(--sel);display:flex;align-items:center;justify-content:center;margin-bottom:24px;transition:border-radius .25s}
+.ob-app-icon{width:72px;height:72px;border-radius:calc(var(--r) + 8px);background:var(--fill);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(0,0,0,.2);transition:border-radius .25s}
 .ob-app-icon i{font-size:36px;color:#fff}
-.ob-feature-icon{
-  width:56px;height:56px;border-radius:calc(var(--r) + 4px);
-  background:var(--fill);
-  display:flex;align-items:center;justify-content:center;
-  transition:border-radius .25s;
-}
+.ob-feature-icon{width:56px;height:56px;border-radius:calc(var(--r) + 4px);background:var(--fill);display:flex;align-items:center;justify-content:center;transition:border-radius .25s}
 .ob-feature-icon i{font-size:24px;color:#fff}
-.ob-title{
-  font-size:22px;font-weight:700;color:var(--tx);
-  line-height:1.25;margin-bottom:12px;
-}
-.ob-sub{
-  font-size:14px;color:var(--muted);line-height:1.6;
-  padding:0 4px;max-width:280px;
-}
-.ob-key{
-  display:inline-flex;align-items:center;gap:3px;
-  background:var(--sel);border:1px solid var(--div);
-  border-radius:5px;padding:1px 6px;
-  font-size:12px;color:var(--tx);
-}
-.ob-nav{
-  display:flex;align-items:center;justify-content:space-between;
-  width:100%;margin-top:28px;
-}
+.ob-title{font-size:22px;font-weight:700;color:var(--tx);line-height:1.25;margin-bottom:12px}
+.ob-sub{font-size:14px;color:var(--muted);line-height:1.6;padding:0 4px;max-width:280px}
+.ob-key{display:inline-flex;align-items:center;gap:3px;background:var(--sel);border:1px solid var(--div);border-radius:5px;padding:1px 6px;font-size:12px;color:var(--tx)}
+.ob-nav{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:28px}
 .ob-dots{display:flex;gap:6px;align-items:center}
-.ob-dot{
-  width:6px;height:6px;border-radius:50%;
-  background:var(--div);transition:background .2s,transform .2s,width .2s;
-}
+.ob-dot{width:6px;height:6px;border-radius:50%;background:var(--div);transition:background .2s,width .2s}
 .ob-dot.on{background:var(--fill);width:18px;border-radius:3px}
-.ob-btn{
-  background:var(--fill);color:#fff;border:none;
-  padding:10px 24px;border-radius:var(--r);
-  font-size:14px;font-weight:600;
-  transition:opacity .15s,border-radius .25s;
-}
+.ob-btn{background:var(--fill);color:#fff;border:none;padding:10px 24px;border-radius:var(--r);font-size:14px;font-weight:600;transition:opacity .15s,border-radius .25s}
 .ob-btn:active{opacity:.75}
-.ob-skip{
-  display:inline-flex;align-items:center;gap:9px;
-  margin-top:14px;cursor:pointer;
-  font-size:12px;color:var(--muted);
-  user-select:none;-webkit-tap-highlight-color:transparent;
-}
-/* Reuse the same circle style as todo rows */
-.ob-skip-circle{
-  width:20px;height:20px;border-radius:50%;flex-shrink:0;
-  border:1.75px solid var(--circ);
-  display:flex;align-items:center;justify-content:center;
-  transition:border-color .18s,background .18s,transform .15s;
-}
-.ob-skip-circle.checked{
-  background:var(--fill);border-color:var(--fill);
-}
+.ob-skip{display:inline-flex;align-items:center;gap:9px;margin-top:14px;cursor:pointer;font-size:12px;color:var(--muted);user-select:none;-webkit-tap-highlight-color:transparent}
+.ob-skip-circle{width:20px;height:20px;border-radius:50%;flex-shrink:0;border:1.75px solid var(--circ);display:flex;align-items:center;justify-content:center;transition:border-color .18s,background .18s,transform .15s}
+.ob-skip-circle.checked{background:var(--fill);border-color:var(--fill)}
 .ob-skip-circle .fa-check{font-size:9px;color:#fff;display:none}
 .ob-skip-circle.checked .fa-check{display:block}
 .ob-skip:active .ob-skip-circle{transform:scale(.88)}
 </style>
 </head>
+
 <body id="app" data-theme="slate">
 <script>
-  // Runs synchronously after <body> is parsed — element exists, no flicker.
-  // Disable body transitions temporarily so the initial theme is instant.
+  // Apply saved theme before first paint — runs synchronously, element already exists.
+  // Disable body transition temporarily so the initial theme is instant with no flash.
   (function(){
     var app = document.getElementById('app');
     app.style.transition = 'none';
@@ -449,7 +399,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
         if (t) app.dataset.theme = t;
       }
     } catch(e) {}
-    // Re-enable transitions after the first paint via rAF
     requestAnimationFrame(function(){
       requestAnimationFrame(function(){
         app.style.transition = '';
@@ -469,11 +418,19 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   </div>
 </nav>
 
-<div class="view active" id="vMain"><div class="tl" id="tList"></div></div>
-<div class="view" id="vArch"><div class="tl" id="aList"></div></div>
+<div class="view active" id="vMain">
+  <div class="tl" id="tList"></div>
+</div>
 
-<!-- Archive FAB -->
-<button id="archFab" title="Clear all archived"><i class="fa-solid fa-trash"></i></button>
+<div class="view" id="vArch">
+  <div class="tl" id="aList"></div>
+  <!--
+    FIX: FAB lives inside the archive view.
+    It slides in with the view, so its position is established before
+    it fades visible — no layout jerk on appearance.
+  -->
+  <button id="archFab" title="Clear all archived"><i class="fa-solid fa-trash"></i></button>
+</div>
 
 <!-- Settings dialog -->
 <div class="ov" id="ovSet">
@@ -553,48 +510,37 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   </div>
 </div>
 
-
-<!-- Onboarding dialog — must be in DOM before script runs -->
+<!-- Onboarding dialog — must be before the main script -->
 <div class="ov" id="ovOnboard">
   <div class="dlg onboard-dlg">
     <button class="dlg-x" id="xOnboard"><i class="fa-solid fa-xmark"></i></button>
 
     <div class="ob-page active" id="ob1">
-      <div class="ob-icon-wrap">
-        <div class="ob-app-icon"><i class="fa-solid fa-circle-check"></i></div>
-      </div>
+      <div class="ob-icon-wrap"><div class="ob-app-icon"><i class="fa-solid fa-circle-check"></i></div></div>
       <h2 class="ob-title">Welcome to<br>PebbleDo</h2>
       <p class="ob-sub">A quiet, minimal to-do list.<br>No accounts. No syncing. Just you and your tasks.</p>
     </div>
 
     <div class="ob-page" id="ob2">
-      <div class="ob-icon-wrap">
-        <div class="ob-feature-icon"><i class="fa-solid fa-pen-to-square"></i></div>
-      </div>
+      <div class="ob-icon-wrap"><div class="ob-feature-icon"><i class="fa-solid fa-pen-to-square"></i></div></div>
       <h2 class="ob-title">Write anything</h2>
       <p class="ob-sub">Tap any row to start typing. Press <span class="ob-key">&#8629; Enter</span> to create the next task. Long tasks wrap automatically.</p>
     </div>
 
     <div class="ob-page" id="ob3">
-      <div class="ob-icon-wrap">
-        <div class="ob-feature-icon"><i class="fa-solid fa-circle-check"></i></div>
-      </div>
+      <div class="ob-icon-wrap"><div class="ob-feature-icon"><i class="fa-solid fa-circle-check"></i></div></div>
       <h2 class="ob-title">Check it off</h2>
       <p class="ob-sub">Tap the circle on a task to archive it. It crosses out and fades away. Tap <span class="ob-key"><i class="fa-solid fa-box-archive" style="font-size:10px"></i></span> to see everything archived.</p>
     </div>
 
     <div class="ob-page" id="ob4">
-      <div class="ob-icon-wrap">
-        <div class="ob-feature-icon"><i class="fa-solid fa-grip-lines"></i></div>
-      </div>
+      <div class="ob-icon-wrap"><div class="ob-feature-icon"><i class="fa-solid fa-grip-lines"></i></div></div>
       <h2 class="ob-title">Reorder freely</h2>
       <p class="ob-sub">Hold and drag the <span class="ob-key"><i class="fa-solid fa-grip-lines" style="font-size:10px"></i></span> grip on any task to move it to a new position.</p>
     </div>
 
     <div class="ob-page" id="ob5">
-      <div class="ob-icon-wrap">
-        <div class="ob-feature-icon"><i class="fa-solid fa-gear"></i></div>
-      </div>
+      <div class="ob-icon-wrap"><div class="ob-feature-icon"><i class="fa-solid fa-gear"></i></div></div>
       <h2 class="ob-title">Make it yours</h2>
       <p class="ob-sub">Tap <span class="ob-key"><i class="fa-solid fa-gear" style="font-size:10px"></i></span> to pick a theme, font, size, and corner radius. Everything saves automatically.</p>
     </div>
@@ -610,20 +556,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
       <button class="ob-btn" id="obNext">Next</button>
     </div>
 
-    <!-- Don't show again — visible on all pages -->
     <div class="ob-skip" id="obSkipWrap">
-      <div class="ob-skip-circle" id="obSkipCircle">
-        <i class="fa-solid fa-check"></i>
-      </div>
+      <div class="ob-skip-circle" id="obSkipCircle"><i class="fa-solid fa-check"></i></div>
       <span>Don't show again</span>
     </div>
   </div>
 </div>
 
 <script>
-/* ── App state ──────────────────────────────── */
+/* ═══════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════ */
 
-// Default tasks shown on first launch
 let tasks = [
   { id: uid(), text: 'Tap a task to edit it' },
   { id: uid(), text: 'Swipe the handle to reorder' },
@@ -632,708 +576,929 @@ let tasks = [
 
 let archived = [];
 
-// Editing state
-let editId    = null; // ID of the task currently being edited
-let pendingId = null; // ID about to be edited (set on mousedown, clears focus flicker)
-
-// View state
+let editId      = null; // ID of the task currently being edited
+let pendingId   = null; // ID about to be edited (prevents blur flicker)
 let currentView = 'main'; // 'main' | 'arch'
 
-// Settings (persisted to localStorage)
+// Settings
 let font     = 'sys';
 let theme    = 'slate';
 let fontSize = 16;
 let radius   = 10;
-let haptics  = true; // haptic feedback enabled by default
+let haptics  = true;
 
-/* ── Helpers ────────────────────────────── */
-function uid(){return '_'+Math.random().toString(36).slice(2,9)}
-function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
-function fontStack(f){
-  if(f==='inter')return"'Inter',sans-serif";
-  if(f==='mono')return"'SF Mono','Fira Code',monospace";
-  if(f==='serif')return"Georgia,'Times New Roman',serif";
-  return"-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif";
-}
-function setVar(n,v){document.getElementById('app').style.setProperty(n,v)}
+// Debounce timer for auto-save while typing
+let saveTimer = null;
 
-/* ── Persist ────────────────────────────── */
-function save(){
-  try{
-    localStorage.setItem('pd_t',JSON.stringify(tasks));
-    localStorage.setItem('pd_a',JSON.stringify(archived));
-    localStorage.setItem('pd_s',JSON.stringify({theme:theme,font:font,fs:fontSize,r:radius,haptics:haptics}));
-  }catch(e){}
-}
-function load(){
-  try{
-    const t=localStorage.getItem('pd_t'),a=localStorage.getItem('pd_a'),s=localStorage.getItem('pd_s');
-    if(t)tasks=JSON.parse(t);
-    if(a)archived=JSON.parse(a);
-    if(s){const p=JSON.parse(s);theme=p.theme||'slate';font=p.font||'sys';fontSize=p.fs||16;radius=p.r!==undefined?p.r:10;haptics=p.haptics!==undefined?p.haptics:true}
-  }catch(e){}
-}
-function applyAll(){
-  const app=document.getElementById('app');
-  app.dataset.theme=theme;
-  app.style.fontFamily=fontStack(font);
-  setVar('--fs',fontSize+'px');setVar('--r',radius+'px');
-  document.querySelectorAll('.dot').forEach(d=>d.classList.toggle('on',d.dataset.t===theme));
-  document.querySelectorAll('.fp').forEach(p=>p.classList.toggle('on',p.dataset.f===font));
-  document.getElementById('fsR').value=fontSize;document.getElementById('fsV').textContent=fontSize;
-  document.getElementById('rR').value=radius;document.getElementById('rV').textContent=radius;
-  // Sync haptics toggle
-  const hToggle=document.getElementById('hapticsCircle');
-  if(hToggle) hToggle.classList.toggle('checked',haptics);
+/* ═══════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════ */
+
+function uid() { return '_' + Math.random().toString(36).slice(2, 9); }
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-/* ── Haptic feedback ────────────────────── */
-// Patterns (ms): short tap, medium, double-tap, drag-ready
-function vibrate(pattern){
-  if(!haptics)return;
-  try{ navigator.vibrate && navigator.vibrate(pattern); }catch(e){}
+function fontStack(f) {
+  if (f === 'inter') return "'Inter', sans-serif";
+  if (f === 'mono')  return "'SF Mono', 'Fira Code', monospace";
+  if (f === 'serif') return "Georgia, 'Times New Roman', serif";
+  return "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif";
 }
 
-/* ── Multiline ──────────────────────────── */
-function checkMultiline(el){ el.classList.toggle('ml', el.offsetHeight > 56); }
+function setVar(name, value) {
+  document.getElementById('app').style.setProperty(name, value);
+}
 
-/* ── Render main ────────────────────────── */
-function render(anim){
-  const list=document.getElementById('tList');
-  // Remove rows for deleted tasks
-  list.querySelectorAll('.row[data-id]').forEach(el=>{
-    if(!tasks.find(t=>t.id===el.dataset.id))el.remove();
+/* ═══════════════════════════════════════════
+   PERSISTENCE
+═══════════════════════════════════════════ */
+
+function save() {
+  // Clear any pending debounced save — this is the real save
+  clearTimeout(saveTimer);
+  saveTimer = null;
+  try {
+    localStorage.setItem('pd_t', JSON.stringify(tasks));
+    localStorage.setItem('pd_a', JSON.stringify(archived));
+    localStorage.setItem('pd_s', JSON.stringify({
+      theme, font, fs: fontSize, r: radius, haptics
+    }));
+  } catch(e) {}
+}
+
+// FIX: debounced save for mid-edit keystrokes.
+// Ensures data is persisted even if the user doesn't formally blur/commit.
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(save, 800);
+}
+
+function load() {
+  try {
+    const t = localStorage.getItem('pd_t');
+    const a = localStorage.getItem('pd_a');
+    const s = localStorage.getItem('pd_s');
+    if (t) tasks    = JSON.parse(t);
+    if (a) archived = JSON.parse(a);
+    if (s) {
+      const p = JSON.parse(s);
+      theme    = p.theme    || 'slate';
+      font     = p.font     || 'sys';
+      fontSize = p.fs       || 16;
+      radius   = p.r        !== undefined ? p.r       : 10;
+      haptics  = p.haptics  !== undefined ? p.haptics : true;
+    }
+  } catch(e) {}
+}
+
+function applyAll() {
+  const app = document.getElementById('app');
+  app.dataset.theme        = theme;
+  app.style.fontFamily     = fontStack(font);
+  setVar('--fs', fontSize + 'px');
+  setVar('--r',  radius   + 'px');
+
+  document.querySelectorAll('.dot').forEach(d => d.classList.toggle('on', d.dataset.t === theme));
+  document.querySelectorAll('.fp').forEach(p  => p.classList.toggle('on', p.dataset.f === font));
+
+  document.getElementById('fsR').value        = fontSize;
+  document.getElementById('fsV').textContent  = fontSize;
+  document.getElementById('rR').value         = radius;
+  document.getElementById('rV').textContent   = radius;
+
+  const hCircle = document.getElementById('hapticsCircle');
+  if (hCircle) hCircle.classList.toggle('checked', haptics);
+}
+
+/* ═══════════════════════════════════════════
+   HAPTIC FEEDBACK
+═══════════════════════════════════════════ */
+
+function vibrate(pattern) {
+  if (!haptics) return;
+  try { navigator.vibrate && navigator.vibrate(pattern); } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════
+   MULTILINE DETECTION
+═══════════════════════════════════════════ */
+
+function checkMultiline(el) {
+  el.classList.toggle('ml', el.offsetHeight > 56);
+}
+
+/* ═══════════════════════════════════════════
+   RENDER — MAIN LIST
+═══════════════════════════════════════════ */
+
+function render(anim) {
+  const list = document.getElementById('tList');
+
+  // Remove rows whose tasks have been deleted
+  list.querySelectorAll('.row[data-id]').forEach(el => {
+    if (!tasks.find(t => t.id === el.dataset.id)) el.remove();
   });
-  // Create missing rows, inserting at the correct index position.
-  // Phase 3 (full reorder) is intentionally removed — drag handles its own
-  // DOM reorder directly in onDE, and new rows insert at the right spot here.
-  tasks.forEach((task,idx)=>{
-    if(!list.querySelector(`.row[data-id="${task.id}"]`)){
-      const row=makeRow(task);
-      // Insert before the existing row at idx, or before empty slots, or at end
-      const existingRows=list.querySelectorAll('.row[data-id]');
-      const ref=existingRows[idx]||list.querySelector('.e1')||null;
-      list.insertBefore(row,ref);
-      if(anim)row.classList.add('r-in');
+
+  // Create any missing rows at the correct index
+  tasks.forEach((task, idx) => {
+    if (!list.querySelector(`.row[data-id="${task.id}"]`)) {
+      const row = makeRow(task);
+      const refs = list.querySelectorAll('.row[data-id]');
+      const ref  = refs[idx] || list.querySelector('.e1') || null;
+      list.insertBefore(row, ref);
+      if (anim) row.classList.add('r-in');
     }
   });
-  // Update editing state on all existing rows — no layout-forcing reads
-  tasks.forEach(task=>{
-    const row=list.querySelector(`.row[data-id="${task.id}"]`);
-    if(!row)return;
-    row.classList.toggle('editing',editId===task.id);
+
+  // Sync editing highlight on all rows (no layout reads)
+  tasks.forEach(task => {
+    const row = list.querySelector(`.row[data-id="${task.id}"]`);
+    if (row) row.classList.toggle('editing', editId === task.id);
   });
-  // Ensure empty slots
-  ['e1','e2','e3'].forEach(cls=>{
-    if(!list.querySelector('.'+cls))list.appendChild(makeEmpty(cls,anim));
+
+  // Ensure 3 empty placeholder slots
+  ['e1', 'e2', 'e3'].forEach(cls => {
+    if (!list.querySelector('.' + cls)) list.appendChild(makeEmpty(cls, anim));
   });
 }
 
-function makeRow(task){
-  const row=document.createElement('div');
-  row.className='row';row.dataset.id=task.id;
-  row.innerHTML=`
+function makeRow(task) {
+  const row = document.createElement('div');
+  row.className  = 'row';
+  row.dataset.id = task.id;
+  row.innerHTML  = `
     <div class="chk"><div class="circle"><i class="fa-solid fa-check"></i></div></div>
     <span class="txt">${esc(task.text)}</span>
     <div class="dh"><i class="fa-solid fa-grip-lines"></i></div>`;
-  row.querySelector('.chk').addEventListener('click',e=>{e.stopPropagation();doArchive(task.id,row)});
-  row.querySelector('.txt').addEventListener('click',()=>startEdit(task.id));
-  const dh=row.querySelector('.dh');
-  dh.addEventListener('touchstart',e=>initDrag(e,task.id),{passive:false});
-  dh.addEventListener('mousedown',e=>initDrag(e,task.id));
-  requestAnimationFrame(()=>checkMultiline(row));
+
+  row.querySelector('.chk').addEventListener('click', e => {
+    e.stopPropagation();
+    doArchive(task.id, row);
+  });
+  row.querySelector('.txt').addEventListener('click', () => startEdit(task.id));
+
+  const dh = row.querySelector('.dh');
+  dh.addEventListener('touchstart', e => initDrag(e, task.id), { passive: false });
+  dh.addEventListener('mousedown',  e => initDrag(e, task.id));
+
+  requestAnimationFrame(() => checkMultiline(row));
   return row;
 }
 
-function makeEmpty(cls,anim){
-  const row=document.createElement('div');
-  row.className='row '+cls;
-  if(anim)row.classList.add('e-in');
-  row.innerHTML=`<div class="chk"><div class="circle"><i class="fa-solid fa-check"></i></div></div><span class="txt"></span>`;
-  row.addEventListener('click',()=>{
-    const t={id:uid(),text:''};tasks.push(t);save();render(false);startEdit(t.id);
+function makeEmpty(cls, anim) {
+  const row = document.createElement('div');
+  row.className = 'row ' + cls;
+  if (anim) row.classList.add('e-in');
+  row.innerHTML = `
+    <div class="chk"><div class="circle"><i class="fa-solid fa-check"></i></div></div>
+    <span class="txt"></span>`;
+  row.addEventListener('click', () => {
+    const t = { id: uid(), text: '' };
+    tasks.push(t);
+    save();
+    render(false);
+    startEdit(t.id);
   });
   return row;
 }
 
-/* ════════════════════════════════════════════════════════
-   ARCHIVE ANIMATION — full 4-step sequence
-   1. Circle fills + pop (immediate)
-   2. Text colour fades to muted + strike line grows L→R (0–450ms)
-   3. Container + text fades to opacity 0, bg clears (450–820ms)
-   4. Hold empty space (820–1060ms) → height collapses (1060–1380ms)
-   ════════════════════════════════════════════════════════ */
-function doArchive(id,rowEl){
-  if(editId===id)commitEdit(id,false);
-  // Guard — already animating
-  if(rowEl.dataset.animating)return;
-  rowEl.dataset.animating='1';
+/* ═══════════════════════════════════════════
+   ARCHIVE ANIMATION
+   1. Circle fills + pop
+   2. Text → muted colour, strike line grows L→R
+   3. Inner elements fade to opacity:0 in-place
+   4. Ghost space holds, then height collapses
+   5. Row removed; empty slots ensured
+═══════════════════════════════════════════ */
 
-  vibrate(40); // short tap: task checked off
-  // ── Commit state IMMEDIATELY ─────────────────────────────────────────────
-  // State is always correct from this point forward, regardless of animation.
-  // If the user switches currentView mid-animation, the archive list will be correct.
-  const task=tasks.find(t=>t.id===id);
-  if(!task)return;
-  tasks=tasks.filter(t=>t.id!==id);
-  archived.unshift({id:task.id,text:task.text});
+function doArchive(id, rowEl) {
+  if (editId === id) commitEdit(id, false);
+  if (rowEl.dataset.animating) return; // already mid-animation
+  rowEl.dataset.animating = '1';
+
+  vibrate(40);
+
+  // Commit state immediately — archive list is correct from this point
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  tasks    = tasks.filter(t => t.id !== id);
+  archived.unshift({ id: task.id, text: task.text });
   save();
   updateFab();
-  // ─────────────────────────────────────────────────────────────────────────
 
-  const circle=rowEl.querySelector('.circle');
-  const txtEl=rowEl.querySelector('.txt');
+  const circle = rowEl.querySelector('.circle');
+  const txtEl  = rowEl.querySelector('.txt');
 
-  // Show container focus
   rowEl.classList.add('editing');
 
-  // Step 1 — circle fills + pop
-  circle.classList.add('done','pop');
-  circle.addEventListener('animationend',()=>circle.classList.remove('pop'),{once:true});
+  // Step 1 — circle fills + pop animation
+  circle.classList.add('done', 'pop');
+  circle.addEventListener('animationend', () => circle.classList.remove('pop'), { once: true });
 
-  // Step 2 — text fades to muted colour + strike line grows L→R
-  txtEl.style.transition='color .4s ease';
-  txtEl.style.color='var(--muted)';
-  const sline=document.createElement('span');
-  sline.className='sline';
+  // Step 2 — text colour fades to muted + strike line grows L→R
+  txtEl.style.transition = 'color .4s ease';
+  txtEl.style.color = 'var(--muted)';
+  const sline = document.createElement('span');
+  sline.className = 'sline';
   rowEl.appendChild(sline);
-  setTimeout(()=>sline.classList.add('grow'),20);
+  setTimeout(() => sline.classList.add('grow'), 20);
 
-  // Step 3 — fade inner elements to opacity 0 in-place
-  setTimeout(()=>{
-    if(!rowEl.isConnected)return; // currentView switched — row already removed
+  // Step 3 — fade inner elements to opacity:0, row wrapper stays in place
+  setTimeout(() => {
+    if (!rowEl.isConnected) return;
     rowEl.classList.remove('editing');
-    const els=[circle,txtEl,rowEl.querySelector('.dh'),sline];
-    els.forEach(el=>{
-      if(!el)return;
-      el.style.transition='opacity .36s ease';
-      el.style.opacity='0';
+    [circle, txtEl, rowEl.querySelector('.dh'), sline].forEach(el => {
+      if (!el) return;
+      el.style.transition = 'opacity .36s ease';
+      el.style.opacity    = '0';
     });
-  },460);
+  }, 460);
 
   // Step 4 — hold empty ghost space, then collapse height
-  setTimeout(()=>{
-    if(!rowEl.isConnected)return;
-    const h=rowEl.offsetHeight;
-    rowEl.style.overflow='hidden';
-    rowEl.style.height=h+'px';
-    rowEl.style.minHeight='0';
-    setTimeout(()=>{
-      if(!rowEl.isConnected)return;
-      rowEl.style.transition='height .36s cubic-bezier(.4,0,.2,1), margin .36s cubic-bezier(.4,0,.2,1)';
-      rowEl.style.height='0';
-      rowEl.style.marginTop='0';
-      rowEl.style.marginBottom='0';
-    },260);
-  },840);
+  setTimeout(() => {
+    if (!rowEl.isConnected) return;
+    const h = rowEl.offsetHeight;
+    rowEl.style.overflow  = 'hidden';
+    rowEl.style.height    = h + 'px';
+    rowEl.style.minHeight = '0';
+    setTimeout(() => {
+      if (!rowEl.isConnected) return;
+      rowEl.style.transition  = 'height .36s cubic-bezier(.4,0,.2,1), margin .36s cubic-bezier(.4,0,.2,1)';
+      rowEl.style.height      = '0';
+      rowEl.style.marginTop   = '0';
+      rowEl.style.marginBottom = '0';
+    }, 260);
+  }, 840);
 
-  // Step 5 — remove row from DOM, ensure empty slots
-  setTimeout(()=>{
+  // Step 5 — remove row, replenish empty slots
+  setTimeout(() => {
     rowEl.remove();
-    const list=document.getElementById('tList');
-    ['e1','e2','e3'].forEach(cls=>{
-      if(!list.querySelector('.'+cls))list.appendChild(makeEmpty(cls,false));
+    const list = document.getElementById('tList');
+    ['e1', 'e2', 'e3'].forEach(cls => {
+      if (!list.querySelector('.' + cls)) list.appendChild(makeEmpty(cls, false));
     });
-  },1480);
+  }, 1480);
 }
 
-/* ── Archive render ─────────────────────── */
-function renderArch(full){
-  const list=document.getElementById('aList');
-  if(full||list.querySelector('.arch-empty')){
-    list.innerHTML='';
-    if(!archived.length){showArchEmpty(list);return}
-    archived.forEach((t,i)=>{ const r = makeArchRow(t); r.style.animationDelay = (i * 40) + 'ms'; list.appendChild(r); });
+/* ═══════════════════════════════════════════
+   ARCHIVE RENDER
+═══════════════════════════════════════════ */
+
+function renderArch(full) {
+  const list = document.getElementById('aList');
+
+  // Full rebuild when opening the view or when empty state is showing
+  if (full || list.querySelector('.arch-empty')) {
+    list.innerHTML = '';
+    if (!archived.length) { showArchEmpty(list); return; }
+    archived.forEach((t, i) => {
+      const r = makeArchRow(t);
+      r.style.animationDelay = (i * 40) + 'ms';
+      list.appendChild(r);
+    });
     return;
   }
-  // Keyed update — don't rebuild, just remove stale and add new
-  list.querySelectorAll('.ar[data-id]').forEach(el=>{
-    if(!archived.find(t=>t.id===el.dataset.id))el.remove();
+
+  // Keyed update — only remove stale rows, insert new ones
+  list.querySelectorAll('.ar[data-id]').forEach(el => {
+    if (!archived.find(t => t.id === el.dataset.id)) el.remove();
   });
-  archived.forEach((t,i)=>{
-    if(!list.querySelector(`.ar[data-id="${t.id}"]`)){
-      const r=makeArchRow(t);
-      const refs=list.querySelectorAll('.ar[data-id]');
-      list.insertBefore(r,refs[i]||null);
+  archived.forEach((t, i) => {
+    if (!list.querySelector(`.ar[data-id="${t.id}"]`)) {
+      const r    = makeArchRow(t);
+      const refs = list.querySelectorAll('.ar[data-id]');
+      list.insertBefore(r, refs[i] || null);
     }
   });
-  if(!archived.length)showArchEmpty(list);
+  if (!archived.length) showArchEmpty(list);
 }
 
-function showArchEmpty(list){
-  list.innerHTML=`<div class="arch-empty"><i class="fa-solid fa-box-archive"></i><p>Nothing archived yet</p></div>`;
+function showArchEmpty(list) {
+  list.innerHTML = `<div class="arch-empty"><i class="fa-solid fa-box-archive"></i><p>Nothing archived yet</p></div>`;
 }
 
-function makeArchRow(task){
-  const row=document.createElement('div');
-  row.className='ar a-in';row.dataset.id=task.id;
-  row.innerHTML=`
+function makeArchRow(task) {
+  const row = document.createElement('div');
+  row.className  = 'ar a-in';
+  row.dataset.id = task.id;
+  row.innerHTML  = `
     <div class="ac-wrap"><div class="ac"><i class="fa-solid fa-check"></i></div></div>
     <span class="at">${esc(task.text)}</span>
     <button class="ad"><i class="fa-solid fa-xmark"></i></button>`;
-  row.querySelector('.ac-wrap').addEventListener('click',e=>{e.stopPropagation();doUnarchive(task.id,row)});
-  row.querySelector('.ad').addEventListener('click',()=>{ vibrate(30); collapseRow(row,()=>{
-    archived=archived.filter(t=>t.id!==task.id);save();
-    if(!archived.length)showArchEmpty(document.getElementById('aList'));
-    updateFab();
-  }); });
-  requestAnimationFrame(()=>checkMultiline(row));
+
+  row.querySelector('.ac-wrap').addEventListener('click', e => {
+    e.stopPropagation();
+    doUnarchive(task.id, row);
+  });
+
+  row.querySelector('.ad').addEventListener('click', () => {
+    vibrate(30);
+    collapseRow(row, () => {
+      archived = archived.filter(t => t.id !== task.id);
+      save();
+      if (!archived.length) showArchEmpty(document.getElementById('aList'));
+      updateFab();
+    });
+  });
+
+  requestAnimationFrame(() => checkMultiline(row));
   return row;
 }
 
-function updateFab(){
-  const fab=document.getElementById('archFab');
-  fab.classList.toggle('visible',currentView==='arch'&&archived.length>=1);
+function updateFab() {
+  const fab = document.getElementById('archFab');
+  fab.classList.toggle('visible', currentView === 'arch' && archived.length >= 1);
 }
 
-/* ── Unarchive: reverse of archive animation ─── */
-function doUnarchive(id,rowEl){
-  if(rowEl.dataset.animating)return;
-  rowEl.dataset.animating='1';
+/* ═══════════════════════════════════════════
+   UNARCHIVE — reverse of archive animation
+═══════════════════════════════════════════ */
 
-  vibrate(40); // short tap: task unchecked
-  // Commit state immediately — same pattern as doArchive
-  const archTask=archived.find(x=>x.id===id);
-  if(!archTask)return;
-  archived=archived.filter(x=>x.id!==id);
-  tasks.unshift({id:archTask.id,text:archTask.text});
-  save();updateFab();
+function doUnarchive(id, rowEl) {
+  if (rowEl.dataset.animating) return;
+  rowEl.dataset.animating = '1';
 
-  // Step 1 — circle unchecks (shrinks)
-  const ac=rowEl.querySelector('.ac');
-  ac.style.transition='transform .22s ease,opacity .22s ease';
-  ac.style.transform='scale(0)';ac.style.opacity='0';
+  vibrate(40);
 
-  // Step 2 — collapse archive row
-  setTimeout(()=>{
-    collapseRow(rowEl,()=>{
-      if(!archived.length)showArchEmpty(document.getElementById('aList'));
+  // Commit state immediately
+  const archTask = archived.find(x => x.id === id);
+  if (!archTask) return;
+  archived = archived.filter(x => x.id !== id);
+  tasks.unshift({ id: archTask.id, text: archTask.text });
+  save();
+  updateFab();
+
+  // Shrink the circle first, then collapse the row
+  const ac = rowEl.querySelector('.ac');
+  ac.style.transition = 'transform .22s ease, opacity .22s ease';
+  ac.style.transform  = 'scale(0)';
+  ac.style.opacity    = '0';
+
+  setTimeout(() => {
+    collapseRow(rowEl, () => {
+      if (!archived.length) showArchEmpty(document.getElementById('aList'));
       updateFab();
     });
-  },200);
+  }, 200);
 
-  // Step 3 — insert the new todo row in main list with reverse animation.
-  // Runs in parallel with the archive row collapse.
-  setTimeout(()=>{
-    const list=document.getElementById('tList');
-    const row=makeRow({id:archTask.id,text:archTask.text});
-    // Insert at top (tasks.unshift put it first)
-    const firstRow=list.querySelector('.row[data-id]');
-    list.insertBefore(row,firstRow||list.querySelector('.e1')||null);
+  // In parallel: insert the task back into main with reverse animation
+  setTimeout(() => {
+    const list     = document.getElementById('tList');
+    const row      = makeRow({ id: archTask.id, text: archTask.text });
+    const firstRow = list.querySelector('.row[data-id]');
+    list.insertBefore(row, firstRow || list.querySelector('.e1') || null);
 
-    // Apply "pre-done" state: muted text, filled circle, strikethrough visible
-    const circle=row.querySelector('.circle');
-    const txtEl=row.querySelector('.txt');
+    const circle = row.querySelector('.circle');
+    const txtEl  = row.querySelector('.txt');
+
+    // Start in the "done" state
     circle.classList.add('done');
-    txtEl.style.color='var(--muted)';
+    txtEl.style.color = 'var(--muted)';
 
-    // Inject sline already at full width
-    const sline=document.createElement('span');
-    sline.className='sline';
-    sline.style.transform='scaleX(1)'; // already visible
+    const sline = document.createElement('span');
+    sline.className      = 'sline';
+    sline.style.transform = 'scaleX(1)';
     row.appendChild(sline);
 
-    // Trigger reverse: sline shrinks R→L, circle unfills, text back to normal
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{
-      // Strike shrinks from right
+    // Animate in reverse: strike shrinks R→L, text returns to normal, circle unfills
+    requestAnimationFrame(() => requestAnimationFrame(() => {
       sline.classList.add('sline-rev');
-      // Text fades to normal
-      txtEl.style.transition='color .4s ease';
-      txtEl.style.color='';
-      // Circle unfills
-      circle.style.transition='background .3s ease,border-color .3s ease';
+      txtEl.style.transition = 'color .4s ease';
+      txtEl.style.color      = '';
+      circle.style.transition = 'background .3s ease, border-color .3s ease';
       circle.classList.remove('done');
     }));
 
-    // Clean up after animation
-    setTimeout(()=>{
+    setTimeout(() => {
       sline.remove();
-      circle.style.transition='';
-      txtEl.style.transition='';
-      txtEl.style.color='';
-    },500);
-  },100);
+      circle.style.transition = '';
+      txtEl.style.transition  = '';
+      txtEl.style.color       = '';
+    }, 500);
+  }, 100);
 }
 
-function collapseRow(rowEl,done){
-  // Fade inner children first (same pattern as main currentView archive animation)
-  const children=[...rowEl.children];
-  children.forEach(el=>{
-    el.style.transition='opacity .3s ease';
-    el.style.opacity='0';
+function collapseRow(rowEl, done) {
+  // Fade inner children first
+  [...rowEl.children].forEach(el => {
+    el.style.transition = 'opacity .3s ease';
+    el.style.opacity    = '0';
   });
-
-  // After fade, hold briefly then collapse height
-  setTimeout(()=>{
-    const h=rowEl.offsetHeight;
-    rowEl.style.overflow='hidden';
-    rowEl.style.height=h+'px';
-    rowEl.style.minHeight='0';
-    setTimeout(()=>{
-      rowEl.style.transition='height .34s cubic-bezier(.4,0,.2,1), margin .34s cubic-bezier(.4,0,.2,1)';
-      rowEl.style.height='0';
-      rowEl.style.marginTop='0';
-      rowEl.style.marginBottom='0';
-    },200);
-  },320);
-
-  setTimeout(()=>{rowEl.remove();done()},700);
+  setTimeout(() => {
+    const h = rowEl.offsetHeight;
+    rowEl.style.overflow  = 'hidden';
+    rowEl.style.height    = h + 'px';
+    rowEl.style.minHeight = '0';
+    setTimeout(() => {
+      rowEl.style.transition   = 'height .34s cubic-bezier(.4,0,.2,1), margin .34s cubic-bezier(.4,0,.2,1)';
+      rowEl.style.height       = '0';
+      rowEl.style.marginTop    = '0';
+      rowEl.style.marginBottom = '0';
+    }, 200);
+  }, 320);
+  setTimeout(() => { rowEl.remove(); done(); }, 700);
 }
 
-/* ── Editing ────────────────────────────── */
-function startEdit(id){
-  pendingId=id;
-  if(editId&&editId!==id)commitEdit(editId);
-  editId=id;pendingId=null;
+/* ═══════════════════════════════════════════
+   EDITING
+═══════════════════════════════════════════ */
 
-  const row=document.querySelector(`.row[data-id="${id}"]`);
-  if(!row)return;
-  const task=tasks.find(t=>t.id===id);if(!task)return;
+function startEdit(id) {
+  pendingId = id;
+  if (editId && editId !== id) commitEdit(editId);
+  editId    = id;
+  pendingId = null;
 
-  const existing=row.querySelector('.inp');
-  if(existing){row.classList.add('editing');existing.focus();return}
+  const row  = document.querySelector(`.row[data-id="${id}"]`);
+  if (!row) return;
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
 
-  const txtEl=row.querySelector('.txt');if(!txtEl)return;
+  // Already editing this row — just re-focus
+  const existing = row.querySelector('.inp');
+  if (existing) { row.classList.add('editing'); existing.focus(); return; }
 
-  document.querySelectorAll('.row.editing').forEach(r=>{if(r!==row)r.classList.remove('editing')});
-  row.classList.remove('ml'); // reset before textarea so drag handle stays centred
+  const txtEl = row.querySelector('.txt');
+  if (!txtEl) return;
+
+  document.querySelectorAll('.row.editing').forEach(r => { if (r !== row) r.classList.remove('editing'); });
+  row.classList.remove('ml'); // reset before textarea so handle stays centred
   row.classList.add('editing');
 
-  const ta=document.createElement('textarea');
-  ta.className='inp';ta.value=task.text;ta.placeholder='Task…';ta.rows=1;
-  ta.style.fontFamily=fontStack(font);ta.style.fontSize=fontSize+'px';
+  const ta         = document.createElement('textarea');
+  ta.className     = 'inp';
+  ta.value         = task.text;
+  ta.placeholder   = 'Task…';
+  ta.rows          = 1;
+  ta.style.fontFamily = fontStack(font);
+  ta.style.fontSize   = fontSize + 'px';
 
-  function grow(){ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';checkMultiline(row)}
-  txtEl.replaceWith(ta);ta.focus();grow();
-  ta.setSelectionRange(ta.value.length,ta.value.length);
+  function grow() {
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
+    checkMultiline(row);
+  }
 
-  ta.addEventListener('input',()=>{task.text=ta.value;grow()});
-  ta.addEventListener('blur',()=>{
-    requestAnimationFrame(()=>{
-      if(pendingId&&pendingId!==id){row.classList.remove('editing');editId=null;return}
+  txtEl.replaceWith(ta);
+  ta.focus();
+  grow();
+  ta.setSelectionRange(ta.value.length, ta.value.length);
+
+  // FIX: update task.text on every keystroke AND schedule a debounced save.
+  // This prevents data loss if the user types but never formally blurs/commits.
+  ta.addEventListener('input', () => {
+    task.text = ta.value;
+    grow();
+    scheduleSave();
+  });
+
+  ta.addEventListener('blur', () => {
+    requestAnimationFrame(() => {
+      // If another row is about to be edited, don't flicker the old row
+      if (pendingId && pendingId !== id) {
+        row.classList.remove('editing');
+        editId = null;
+        return;
+      }
       commitEdit(id);
     });
   });
-  ta.addEventListener('keydown',e=>{
-    if(e.key==='Enter'&&!e.shiftKey){
-      e.preventDefault();commitEdit(id);
-      const nt={id:uid(),text:''};const i=tasks.findIndex(t=>t.id===id);
-      tasks.splice(i+1,0,nt);save();render(false);startEdit(nt.id);
-    } else if(e.key==='Escape'){ta.blur()}
-    else if(e.key==='ArrowUp'&&ta.selectionStart===0){e.preventDefault();commitEdit(id);nav(-1)}
-    else if(e.key==='ArrowDown'&&ta.selectionEnd===ta.value.length){e.preventDefault();commitEdit(id);nav(1)}
-    else if(e.key==='Backspace'&&ta.value===''){
-      e.preventDefault();const i=tasks.findIndex(t=>t.id===id);
-      commitEdit(id,false);tasks=tasks.filter(t=>t.id!==id);save();render(false);
-      if(i>0&&tasks[i-1])startEdit(tasks[i-1].id);
+
+  ta.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      commitEdit(id);
+      const newTask = { id: uid(), text: '' };
+      const idx     = tasks.findIndex(t => t.id === id);
+      tasks.splice(idx + 1, 0, newTask);
+      save();
+      render(false);
+      startEdit(newTask.id);
+    } else if (e.key === 'Escape') {
+      ta.blur();
+    } else if (e.key === 'ArrowUp' && ta.selectionStart === 0) {
+      e.preventDefault(); commitEdit(id); nav(-1);
+    } else if (e.key === 'ArrowDown' && ta.selectionEnd === ta.value.length) {
+      e.preventDefault(); commitEdit(id); nav(1);
+    } else if (e.key === 'Backspace' && ta.value === '') {
+      e.preventDefault();
+      const idx = tasks.findIndex(t => t.id === id);
+      commitEdit(id, false);
+      tasks = tasks.filter(t => t.id !== id);
+      save();
+      render(false);
+      if (idx > 0 && tasks[idx - 1]) startEdit(tasks[idx - 1].id);
     }
   });
 }
 
-// Track pending edit on pointer-down so blur doesn't flicker
-document.addEventListener('mousedown',e=>{const t=e.target.closest('.txt');if(t){const r=t.closest('.row[data-id]');if(r)pendingId=r.dataset.id}},true);
-document.addEventListener('touchstart',e=>{const t=e.target.closest('.txt');if(t){const r=t.closest('.row[data-id]');if(r)pendingId=r.dataset.id}},{passive:true,capture:true});
+// Flag the incoming row on pointer-down so the blur handler knows not to flicker
+document.addEventListener('mousedown', e => {
+  const txt = e.target.closest('.txt');
+  if (txt) { const r = txt.closest('.row[data-id]'); if (r) pendingId = r.dataset.id; }
+}, true);
+document.addEventListener('touchstart', e => {
+  const txt = e.target.closest('.txt');
+  if (txt) { const r = txt.closest('.row[data-id]'); if (r) pendingId = r.dataset.id; }
+}, { passive: true, capture: true });
 
-// Dismiss input when keyboard closes (visualViewport height increases)
-if(window.visualViewport){
-  let prevH=window.visualViewport.height;
-  window.visualViewport.addEventListener('resize',()=>{
-    const h=window.visualViewport.height;
-    if(h>prevH+80&&editId){
-      // Keyboard was dismissed — unfocus
-      const ta=document.querySelector('.inp');
-      if(ta)ta.blur();
+// Dismiss keyboard when the user closes it via back button / swipe-down
+if (window.visualViewport) {
+  let prevH = window.visualViewport.height;
+  window.visualViewport.addEventListener('resize', () => {
+    const h = window.visualViewport.height;
+    if (h > prevH + 80 && editId) {
+      const ta = document.querySelector('.inp');
+      if (ta) ta.blur();
     }
-    prevH=h;
+    prevH = h;
   });
 }
 
-function commitEdit(id,doRender=true){
-  if(editId!==id)return;editId=null;
-  const row=document.querySelector(`.row[data-id="${id}"]`);
-  const task=tasks.find(t=>t.id===id);
+function commitEdit(id, doRender = true) {
+  if (editId !== id) return;
+  editId = null;
 
-  if(row){
+  // Cancel any pending debounced save — we're about to do a real one
+  clearTimeout(saveTimer);
+  saveTimer = null;
+
+  const row  = document.querySelector(`.row[data-id="${id}"]`);
+  const task = tasks.find(t => t.id === id);
+
+  if (row) {
     row.classList.remove('editing');
-    // Restore textarea → span surgically (no full render, no layout reads)
-    const ta=row.querySelector('.inp');
-    if(ta){
-      const sp=document.createElement('span');
-      sp.className='txt';
-      sp.textContent=task?task.text:'';
-      sp.addEventListener('click',()=>startEdit(id));
+    // Surgically replace textarea with span — no full render, no layout reads
+    const ta = row.querySelector('.inp');
+    if (ta) {
+      const sp = document.createElement('span');
+      sp.className = 'txt';
+      // FIX: always use the in-memory task.text (already kept in sync by input listener)
+      sp.textContent = task ? task.text : '';
+      sp.addEventListener('click', () => startEdit(id));
       ta.replaceWith(sp);
+      checkMultiline(row);
     }
   }
 
-  if(!task){if(doRender)render(false);return}
-  if(!task.text.trim()){
-    // Task deleted — remove its row and call render to clean up
-    tasks=tasks.filter(t=>t.id!==id);
-    if(row)row.remove();
-    // Ensure empty slots
-    const list=document.getElementById('tList');
-    ['e1','e2','e3'].forEach(cls=>{
-      if(!list.querySelector('.'+cls))list.appendChild(makeEmpty(cls,false));
+  if (!task) { if (doRender) render(false); return; }
+
+  if (!task.text.trim()) {
+    // Empty task — delete it
+    tasks = tasks.filter(t => t.id !== id);
+    if (row) row.remove();
+    const list = document.getElementById('tList');
+    ['e1', 'e2', 'e3'].forEach(cls => {
+      if (!list.querySelector('.' + cls)) list.appendChild(makeEmpty(cls, false));
     });
-    save();return;
+    save();
+    return;
   }
+
+  // FIX: always save on commit, even if text hasn't changed — this covers
+  // the case where scheduleSave() fired but the 800ms hadn't elapsed yet.
   save();
 }
 
-function nav(dir){
-  if(!tasks.length)return;
-  const i=tasks.findIndex(t=>t.id===editId);
-  const n=tasks[Math.max(0,Math.min(tasks.length-1,i+dir))];
-  if(n)startEdit(n.id);
+function nav(dir) {
+  if (!tasks.length) return;
+  const i    = tasks.findIndex(t => t.id === editId);
+  const next = tasks[Math.max(0, Math.min(tasks.length - 1, i + dir))];
+  if (next) startEdit(next.id);
 }
 
-/* ── Drag & drop ────────────────────────── */
-let drag=null;
-function initDrag(e,tid){
-  // If a todo is being edited, commit it first then allow drag
-  if(editId){
+/* ═══════════════════════════════════════════
+   DRAG & DROP
+═══════════════════════════════════════════ */
+
+let drag = null;
+
+function initDrag(e, tid) {
+  if (editId) {
+    // Commit current edit first, then start drag after keyboard dismiss
     commitEdit(editId);
-    // brief delay so blur fires and keyboard dismisses before ghost appears
-    setTimeout(()=>initDrag(e,tid),80);
+    setTimeout(() => initDrag(e, tid), 80);
     return;
   }
-  e.preventDefault();e.stopPropagation();
-  const list=document.getElementById('tList');
-  const row=list.querySelector(`.row[data-id="${tid}"]`);if(!row)return;
-  const cy=e.touches?e.touches[0].clientY:e.clientY;
-  const rect=row.getBoundingClientRect();
-  const gh=row.cloneNode(true);gh.id='ghost';
-  gh.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;border-radius:${radius}px`;
-  vibrate([20,20,30]); // double-pulse: drag ready
-  document.body.appendChild(gh);row.classList.add('drag-src','editing');
-  drag={tid,gh,row,oy:cy-rect.top,di:tasks.findIndex(t=>t.id===tid)};
-  document.addEventListener('touchmove',onDM,{passive:false});document.addEventListener('touchend',onDE);
-  document.addEventListener('mousemove',onDM);document.addEventListener('mouseup',onDE);
+  e.preventDefault();
+  e.stopPropagation();
+
+  const list = document.getElementById('tList');
+  const row  = list.querySelector(`.row[data-id="${tid}"]`);
+  if (!row) return;
+
+  const cy   = e.touches ? e.touches[0].clientY : e.clientY;
+  const rect = row.getBoundingClientRect();
+  const gh   = row.cloneNode(true);
+  gh.id      = 'ghost';
+  gh.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;border-radius:${radius}px`;
+
+  vibrate([20, 20, 30]);
+  document.body.appendChild(gh);
+  row.classList.add('drag-src', 'editing');
+
+  drag = {
+    tid,
+    gh,
+    row,
+    offsetY: cy - rect.top,
+    dropIdx: tasks.findIndex(t => t.id === tid),
+  };
+
+  document.addEventListener('touchmove', onDM, { passive: false });
+  document.addEventListener('touchend',  onDE);
+  document.addEventListener('mousemove', onDM);
+  document.addEventListener('mouseup',   onDE);
 }
-function onDM(e){
-  if(!drag)return;e.preventDefault();
-  const cy=e.touches?e.touches[0].clientY:e.clientY;
-  drag.gh.style.top=(cy-drag.oy)+'px';
-  const rows=[...document.getElementById('tList').querySelectorAll('.row[data-id]')];
+
+function onDM(e) {
+  if (!drag) return;
+  e.preventDefault();
+  const cy   = e.touches ? e.touches[0].clientY : e.clientY;
+  drag.gh.style.top = (cy - drag.offsetY) + 'px';
+
+  const rows = [...document.getElementById('tList').querySelectorAll('.row[data-id]')];
   let ni = tasks.length;
-  for(let i=0;i<rows.length;i++){const{top,height}=rows[i].getBoundingClientRect();if(cy<top+height/2){ni=i;break}}
-  drag.di=ni;
-  // Remove any existing drop line
-  const existing=document.getElementById('dropLine');
-  if(existing)existing.remove();
-  // Inject a full-width no-radius line at the right position
-  const dl=document.createElement('div');
-  dl.className='drop-line';dl.id='dropLine';
-  const list2=document.getElementById('tList');
-  if(ni<rows.length){
-    list2.insertBefore(dl,rows[ni]);
-  } else if(rows.length){
-    rows[rows.length-1].after(dl);
+  for (let i = 0; i < rows.length; i++) {
+    const { top, height } = rows[i].getBoundingClientRect();
+    if (cy < top + height / 2) { ni = i; break; }
   }
+  drag.dropIdx = ni;
+
+  const existing = document.getElementById('dropLine');
+  if (existing) existing.remove();
+  const dl = document.createElement('div');
+  dl.className = 'drop-line';
+  dl.id        = 'dropLine';
+  const list2  = document.getElementById('tList');
+  if (ni < rows.length)  list2.insertBefore(dl, rows[ni]);
+  else if (rows.length)  rows[rows.length - 1].after(dl);
 }
-function onDE(){
-  if(!drag)return;
-  const dl2=document.getElementById('dropLine');if(dl2)dl2.remove();
-  const from=tasks.findIndex(t=>t.id===drag.tid);let to=drag.di;
-  if(to>from)to=Math.max(0,to-1);
+
+function onDE() {
+  if (!drag) return;
+
+  const dl = document.getElementById('dropLine');
+  if (dl) dl.remove();
+
+  const from = tasks.findIndex(t => t.id === drag.tid);
+  let   to   = drag.dropIdx;
+  if (to > from) to = Math.max(0, to - 1);
 
   drag.gh.remove();
 
-  const list=document.getElementById('tList');
-  const dragRow=drag.row;
+  const list    = document.getElementById('tList');
+  const dragRow = drag.row;
 
-  // Freeze transitions on the dragged row only so it snaps to position
-  dragRow.style.transition='none';
+  // Snap transitions off on the dragged row only so the move is instant
+  dragRow.style.transition = 'none';
 
-  if(from!==-1&&from!==to){
-    const[t]=tasks.splice(from,1);tasks.splice(to,0,t);
-    // Move ONLY the dragged row — all other rows stay untouched
-    const nextTask=tasks[to+1];
-    const refEl=nextTask
-      ?list.querySelector(`.row[data-id="${nextTask.id}"]`)
-      :list.querySelector('.e1')||null;
-    list.insertBefore(dragRow,refEl);
+  if (from !== -1 && from !== to) {
+    const [t] = tasks.splice(from, 1);
+    tasks.splice(to, 0, t);
+    const nextTask = tasks[to + 1];
+    const refEl    = nextTask
+      ? list.querySelector(`.row[data-id="${nextTask.id}"]`)
+      : list.querySelector('.e1') || null;
+    list.insertBefore(dragRow, refEl);
   }
 
-  // Reflow so browser commits the snapped position, then restore transitions
-  list.offsetHeight;
-  dragRow.classList.remove('drag-src','editing');
-  dragRow.style.transition='';
+  list.offsetHeight; // force reflow at snapped position
+  dragRow.classList.remove('drag-src', 'editing');
+  dragRow.style.transition = '';
+  drag = null;
 
-  drag=null;
-  document.removeEventListener('touchmove',onDM);document.removeEventListener('touchend',onDE);
-  document.removeEventListener('mousemove',onDM);document.removeEventListener('mouseup',onDE);
+  document.removeEventListener('touchmove', onDM);
+  document.removeEventListener('touchend',  onDE);
+  document.removeEventListener('mousemove', onDM);
+  document.removeEventListener('mouseup',   onDE);
   save();
 }
 
-/* ── View switching ─────────────────────── */
-function flushAnimatingRows(){
-  // If any rows are mid-archive-animation when the currentView switches,
-  // remove them immediately — state is already correct.
-  const list=document.getElementById('tList');
-  list.querySelectorAll('.row[data-animating]').forEach(r=>r.remove());
-  // Ensure empty slots
-  ['e1','e2','e3'].forEach(cls=>{
-    if(!list.querySelector('.'+cls)) list.appendChild(makeEmpty(cls, false));
+/* ═══════════════════════════════════════════
+   VIEW SWITCHING
+═══════════════════════════════════════════ */
+
+// Immediately remove any rows mid-animation — state was already committed
+function flushAnimatingRows() {
+  const list = document.getElementById('tList');
+  list.querySelectorAll('.row[data-animating]').forEach(r => r.remove());
+  ['e1', 'e2', 'e3'].forEach(cls => {
+    if (!list.querySelector('.' + cls)) list.appendChild(makeEmpty(cls, false));
   });
 }
 
-function showView(v){
-  // Flush any in-progress archive animations before switching
+function showView(v) {
   flushAnimatingRows();
-  currentView=v;
-  const mV=document.getElementById('vMain'),aV=document.getElementById('vArch');
-  mV.classList.toggle('active',v==='main');aV.classList.toggle('active',v==='arch');
-  document.getElementById('btnArch').style.display=v==='main'?'':'none';
-  document.getElementById('btnBack').style.display=v==='arch'?'':'none';
-  const tEl=document.getElementById('nbTitle');
-  tEl.classList.remove('t-anim');void tEl.offsetWidth;
-  tEl.textContent=v==='arch'?'Archive':'PebbleDo';
+  currentView = v;
+
+  const mV = document.getElementById('vMain');
+  const aV = document.getElementById('vArch');
+  mV.classList.toggle('active', v === 'main');
+  aV.classList.toggle('active', v === 'arch');
+
+  document.getElementById('btnArch').style.display = v === 'main' ? '' : 'none';
+  document.getElementById('btnBack').style.display = v === 'arch' ? '' : 'none';
+
+  const tEl = document.getElementById('nbTitle');
+  tEl.classList.remove('t-anim');
+  void tEl.offsetWidth;
+  tEl.textContent = v === 'arch' ? 'Archive' : 'PebbleDo';
   tEl.classList.add('t-anim');
-  tEl.addEventListener('animationend',()=>tEl.classList.remove('t-anim'),{once:true});
-  if(v==='arch'){
-    aV.classList.add('ve-r');aV.addEventListener('animationend',()=>aV.classList.remove('ve-r'),{once:true});
+  tEl.addEventListener('animationend', () => tEl.classList.remove('t-anim'), { once: true });
+
+  if (v === 'arch') {
+    aV.classList.add('ve-r');
+    aV.addEventListener('animationend', () => aV.classList.remove('ve-r'), { once: true });
     renderArch(true);
     updateFab();
   } else {
-    mV.classList.add('ve-l');mV.addEventListener('animationend',()=>mV.classList.remove('ve-l'),{once:true});
-    ['e1','e2','e3'].forEach(cls=>{
-      const el=document.querySelector('.'+cls);if(!el)return;
-      el.classList.remove('e-in');void el.offsetWidth;el.classList.add('e-in');
-      el.addEventListener('animationend',()=>el.classList.remove('e-in'),{once:true});
+    mV.classList.add('ve-l');
+    mV.addEventListener('animationend', () => mV.classList.remove('ve-l'), { once: true });
+    ['e1', 'e2', 'e3'].forEach(cls => {
+      const el = document.querySelector('.' + cls);
+      if (!el) return;
+      el.classList.remove('e-in');
+      void el.offsetWidth;
+      el.classList.add('e-in');
+      el.addEventListener('animationend', () => el.classList.remove('e-in'), { once: true });
     });
     updateFab();
   }
 }
 
-/* ── Dialogs ────────────────────────────── */
-function openDlg(id){document.getElementById(id).classList.add('open')}
-function closeDlg(id){document.getElementById(id).classList.remove('open')}
+/* ═══════════════════════════════════════════
+   DIALOGS
+═══════════════════════════════════════════ */
 
-document.getElementById('btnSet').addEventListener('click',()=>openDlg('ovSet'));
-document.getElementById('xSet').addEventListener('click',()=>closeDlg('ovSet'));
-document.getElementById('ovSet').addEventListener('click',e=>{if(e.target===document.getElementById('ovSet'))closeDlg('ovSet')});
+function openDlg(id)  { document.getElementById(id).classList.add('open');    }
+function closeDlg(id) { document.getElementById(id).classList.remove('open'); }
 
-document.getElementById('btnAbout').addEventListener('click',()=>{closeDlg('ovSet');setTimeout(()=>openDlg('ovAbout'),180)});
-document.getElementById('xAbout').addEventListener('click',()=>closeDlg('ovAbout'));
-document.getElementById('ovAbout').addEventListener('click',e=>{if(e.target===document.getElementById('ovAbout'))closeDlg('ovAbout')});
+document.getElementById('btnSet').addEventListener('click', () => openDlg('ovSet'));
+document.getElementById('xSet').addEventListener('click',   () => closeDlg('ovSet'));
+document.getElementById('ovSet').addEventListener('click', e => {
+  if (e.target === document.getElementById('ovSet')) closeDlg('ovSet');
+});
 
-document.getElementById('xConfirm').addEventListener('click',()=>closeDlg('ovConfirm'));
-document.getElementById('btnCancelClear').addEventListener('click',()=>closeDlg('ovConfirm'));
-document.getElementById('ovConfirm').addEventListener('click',e=>{if(e.target===document.getElementById('ovConfirm'))closeDlg('ovConfirm')});
-document.getElementById('btnConfirmClear').addEventListener('click',()=>{
-  vibrate([30,20,30,20,50]); // stronger pattern: destructive action
+document.getElementById('btnAbout').addEventListener('click', () => {
+  closeDlg('ovSet');
+  setTimeout(() => openDlg('ovAbout'), 180);
+});
+document.getElementById('xAbout').addEventListener('click',   () => closeDlg('ovAbout'));
+document.getElementById('ovAbout').addEventListener('click', e => {
+  if (e.target === document.getElementById('ovAbout')) closeDlg('ovAbout');
+});
+
+document.getElementById('xConfirm').addEventListener('click',       () => closeDlg('ovConfirm'));
+document.getElementById('btnCancelClear').addEventListener('click', () => closeDlg('ovConfirm'));
+document.getElementById('ovConfirm').addEventListener('click', e => {
+  if (e.target === document.getElementById('ovConfirm')) closeDlg('ovConfirm');
+});
+
+document.getElementById('btnConfirmClear').addEventListener('click', () => {
+  vibrate([30, 20, 30, 20, 50]);
   closeDlg('ovConfirm');
-  // Animate all archive rows out staggered
-  const rows=[...document.getElementById('aList').querySelectorAll('.ar[data-id]')];
-  rows.forEach((r,i)=>setTimeout(()=>collapseRow(r,()=>{}), i*60));
-  setTimeout(()=>{archived=[];save();showArchEmpty(document.getElementById('aList'));updateFab()},rows.length*60+460);
+  const rows = [...document.getElementById('aList').querySelectorAll('.ar[data-id]')];
+  rows.forEach((r, i) => setTimeout(() => collapseRow(r, () => {}), i * 60));
+  setTimeout(() => {
+    archived = [];
+    save();
+    showArchEmpty(document.getElementById('aList'));
+    updateFab();
+  }, rows.length * 60 + 460);
 });
 
-document.getElementById('archFab').addEventListener('click',()=>openDlg('ovConfirm'));
+document.getElementById('archFab').addEventListener('click', () => openDlg('ovConfirm'));
 
-/* ── Settings inputs ────────────────────── */
-document.getElementById('themeDots').addEventListener('click',e=>{
-  const d=e.target.closest('.dot');if(!d)return;theme=d.dataset.t;
-  document.querySelectorAll('.dot').forEach(x=>x.classList.toggle('on',x===d));
-  document.getElementById('app').dataset.theme=theme;save();
-});
-document.getElementById('fontPills').addEventListener('click',e=>{
-  const p=e.target.closest('.fp');if(!p)return;font=p.dataset.f;
-  document.querySelectorAll('.fp').forEach(x=>x.classList.toggle('on',x===p));
-  document.getElementById('app').style.fontFamily=fontStack(font);save();
-});
-document.getElementById('fsR').addEventListener('input',function(){
-  fontSize=parseInt(this.value);document.getElementById('fsV').textContent=fontSize;setVar('--fs',fontSize+'px');save();
-});
-document.getElementById('rR').addEventListener('input',function(){
-  radius=parseInt(this.value);document.getElementById('rV').textContent=radius;setVar('--r',radius+'px');save();
-});
-document.getElementById('hapticsToggle').addEventListener('click',()=>{
-  haptics=!haptics;
-  document.getElementById('hapticsCircle').classList.toggle('checked',haptics);
+/* ═══════════════════════════════════════════
+   SETTINGS INPUTS
+═══════════════════════════════════════════ */
+
+document.getElementById('themeDots').addEventListener('click', e => {
+  const d = e.target.closest('.dot');
+  if (!d) return;
+  theme = d.dataset.t;
+  document.querySelectorAll('.dot').forEach(x => x.classList.toggle('on', x === d));
+  document.getElementById('app').dataset.theme = theme;
   save();
 });
 
-document.getElementById('btnArch').addEventListener('click',()=>showView('arch'));
-document.getElementById('btnBack').addEventListener('click',()=>showView('main'));
-document.addEventListener('keydown',e=>{
-  if(currentView!=='main'||editId)return;
-  if(e.key==='ArrowDown'){e.preventDefault();nav(1)}
-  if(e.key==='ArrowUp'){e.preventDefault();nav(-1)}
+document.getElementById('fontPills').addEventListener('click', e => {
+  const p = e.target.closest('.fp');
+  if (!p) return;
+  font = p.dataset.f;
+  document.querySelectorAll('.fp').forEach(x => x.classList.toggle('on', x === p));
+  document.getElementById('app').style.fontFamily = fontStack(font);
+  save();
 });
 
-document.getElementById('yr').textContent=new Date().getFullYear();
-document.getElementById('ghLink').addEventListener('click',e=>{
-  if(typeof NativeBridge!=='undefined'&&NativeBridge.isNative()){e.preventDefault();NativeBridge.openUrl('https://github.com/s17labs')}
+document.getElementById('fsR').addEventListener('input', function() {
+  fontSize = parseInt(this.value);
+  document.getElementById('fsV').textContent = fontSize;
+  setVar('--fs', fontSize + 'px');
+  save();
 });
 
-/* ── Boot ───────────────────────────────── */
-load();applyAll();render(true);
+document.getElementById('rR').addEventListener('input', function() {
+  radius = parseInt(this.value);
+  document.getElementById('rV').textContent = radius;
+  setVar('--r', radius + 'px');
+  save();
+});
 
-/* ── Onboarding ─────────────────────────── */
-;(function(){
+document.getElementById('hapticsToggle').addEventListener('click', () => {
+  haptics = !haptics;
+  document.getElementById('hapticsCircle').classList.toggle('checked', haptics);
+  save();
+});
+
+document.getElementById('btnArch').addEventListener('click', () => showView('arch'));
+document.getElementById('btnBack').addEventListener('click', () => showView('main'));
+
+document.addEventListener('keydown', e => {
+  if (currentView !== 'main' || editId) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); nav(1);  }
+  if (e.key === 'ArrowUp')   { e.preventDefault(); nav(-1); }
+});
+
+document.getElementById('yr').textContent = new Date().getFullYear();
+document.getElementById('ghLink').addEventListener('click', e => {
+  if (typeof NativeBridge !== 'undefined' && NativeBridge.isNative()) {
+    e.preventDefault();
+    NativeBridge.openUrl('https://github.com/s17labs');
+  }
+});
+
+/* ═══════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════ */
+
+load();
+applyAll();
+render(true);
+
+/* ═══════════════════════════════════════════
+   ONBOARDING
+═══════════════════════════════════════════ */
+
+;(function() {
   const PAGES = 5;
   let cur = 1;
 
-  const overlay  = document.getElementById('ovOnboard');
-  const nextBtn  = document.getElementById('obNext');
-  const skipBtn  = document.getElementById('xOnboard');
+  const overlay    = document.getElementById('ovOnboard');
+  const nextBtn    = document.getElementById('obNext');
+  const skipBtn    = document.getElementById('xOnboard');
   const skipWrap   = document.getElementById('obSkipWrap');
   const skipCircle = document.getElementById('obSkipCircle');
-  let   dontShowChecked = false;
+  let dontShowChecked = false;
 
-  skipWrap.addEventListener('click', ()=>{
+  skipWrap.addEventListener('click', () => {
     dontShowChecked = !dontShowChecked;
     skipCircle.classList.toggle('checked', dontShowChecked);
   });
 
-  function dismiss(){
+  function dismiss() {
     closeDlg('ovOnboard');
-    // Only persist the "seen" flag when the checkbox is checked OR user finished all pages
-    if(dontShowChecked){
-      try{ localStorage.setItem('pd_ob','1') }catch(e){}
+    if (dontShowChecked) {
+      try { localStorage.setItem('pd_ob', '1'); } catch(e) {}
     }
   }
 
-  function goTo(n){
-    document.getElementById('ob'+cur).classList.remove('active');
+  function goTo(n) {
+    document.getElementById('ob' + cur).classList.remove('active');
     cur = n;
-    const pg = document.getElementById('ob'+cur);
+    const pg = document.getElementById('ob' + cur);
     pg.classList.remove('active');
-    void pg.offsetWidth; // reflow to re-trigger fade animation
+    void pg.offsetWidth; // reflow to retrigger fade
     pg.classList.add('active');
-    document.querySelectorAll('.ob-dot').forEach((d,i)=>d.classList.toggle('on', i===cur-1));
-    nextBtn.textContent = cur===PAGES ? 'Get started' : 'Next';
+    document.querySelectorAll('.ob-dot').forEach((d, i) => d.classList.toggle('on', i === cur - 1));
+    nextBtn.textContent = cur === PAGES ? 'Get started' : 'Next';
   }
 
-  nextBtn.addEventListener('click', ()=>{
-    if(cur < PAGES){
-      goTo(cur+1);
+  nextBtn.addEventListener('click', () => {
+    if (cur < PAGES) {
+      goTo(cur + 1);
     } else {
-      if(dontShowChecked){
-        try{ localStorage.setItem('pd_ob','1') }catch(e){}
+      if (dontShowChecked) {
+        try { localStorage.setItem('pd_ob', '1'); } catch(e) {}
       }
       closeDlg('ovOnboard');
     }
   });
 
   skipBtn.addEventListener('click', dismiss);
+  overlay.addEventListener('click', e => { if (e.target === overlay) dismiss(); });
 
-  // Tap outside to dismiss
-  overlay.addEventListener('click', e=>{
-    if(e.target === overlay) dismiss();
-  });
-
-  // Show onboarding if not yet seen
-  try{
-    if(!localStorage.getItem('pd_ob')) openDlg('ovOnboard');
-  } catch(e){
+  try {
+    if (!localStorage.getItem('pd_ob')) openDlg('ovOnboard');
+  } catch(e) {
     openDlg('ovOnboard');
   }
 })();
-
 </script>
 </body>
 </html>
