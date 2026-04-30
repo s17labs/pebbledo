@@ -32,15 +32,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
 button{font-family:inherit;cursor:pointer}
-
-/* FIX: remove all focus rings globally — no default browser outlines on Android */
-*:focus,
-*:focus-visible,
-*:focus-within {
-  outline: none !important;
-  box-shadow: none !important;
-  -webkit-tap-highlight-color: transparent;
-}
+*:focus,*:focus-visible,*:focus-within{outline:none!important;box-shadow:none!important;-webkit-tap-highlight-color:transparent}
 
 :root{
   --bg:#1c1c22;--nb:#141418;--sel:rgba(255,255,255,0.08);
@@ -60,32 +52,13 @@ button{font-family:inherit;cursor:pointer}
 [data-theme=ember]{--bg:#281208;--nb:#1e0e04;--sel:rgba(255,255,255,0.08);--div:rgba(255,255,255,0.06);--tx:#f0d8c0;--muted:#6a3820;--circ:rgba(255,255,255,0.22);--fill:#d05828;--icon:rgba(255,255,255,0.3);--icona:rgba(255,255,255,0.8);--ttl:rgba(255,255,255,0.45);--caret:#d05828;--dline:#d05828}
 
 body{
-  background:var(--bg);
-  color:var(--tx);
-  font-family:var(--font);
-  font-size:var(--fs);
-  display:flex;
-  flex-direction:column;
-  height:100%;
-  padding-top:env(safe-area-inset-top);
-  padding-bottom:env(safe-area-inset-bottom);
-  -webkit-tap-highlight-color:transparent;
-  transition:background .3s, color .3s;
-  overflow:hidden;
-  user-select:none;
-  -webkit-user-select:none;
+  background:var(--bg);color:var(--tx);font-family:var(--font);font-size:var(--fs);
+  display:flex;flex-direction:column;height:100%;
+  padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);
+  -webkit-tap-highlight-color:transparent;transition:background .3s,color .3s;
+  overflow:hidden;user-select:none;-webkit-user-select:none;
 }
-
-/* Re-enable selection and native controls for text inputs */
-textarea,input{
-  user-select:text;
-  -webkit-user-select:text;
-  /* FIX: theme-coloured selection handles and cursor on Android WebView */
-  accent-color:var(--fill);
-  caret-color:var(--caret);
-}
-
-/* Text highlight colour */
+textarea,input{user-select:text;-webkit-user-select:text;accent-color:var(--fill);caret-color:var(--caret)}
 ::selection{background:var(--fill);color:#fff}
 ::-moz-selection{background:var(--fill);color:#fff}
 
@@ -101,67 +74,66 @@ textarea,input{
 }
 .ns{display:flex;align-items:center;z-index:1}
 .nb-btn{
-  background:none;
-  border:none;
-  width:48px;
-  height:48px;
-  border-radius:var(--r);
-  color:var(--icon);
-  font-size:18px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  transition:color .15s, background .15s, border-radius .25s;
-  -webkit-tap-highlight-color:transparent;
+  background:none;border:none;width:48px;height:48px;border-radius:var(--r);
+  color:var(--icon);font-size:18px;display:flex;align-items:center;justify-content:center;
+  transition:color .15s,background .15s,border-radius .25s;-webkit-tap-highlight-color:transparent;
 }
 .nb-btn:active,.nb-btn.on{color:var(--icona);background:var(--sel)}
 
-/* ── Views ──────────────────────────────── */
-.view{
-  display:none;flex-direction:column;flex:1;
-  overflow:hidden;
-  /* position:relative so the FAB inside vArch can be absolutely positioned */
-  position:relative;
+/* ── Selection mode navbar ─────────────── */
+.sel-nb{
+  display:none;align-items:center;justify-content:space-between;
+  background:var(--nb);padding:0 8px;height:52px;flex-shrink:0;
+  transition:background .3s;z-index:10;position:relative;
 }
+.sel-nb.active{display:flex}
+.sel-count{
+  position:absolute;left:50%;transform:translateX(-50%);
+  font-size:15px;font-weight:600;color:var(--ttl);letter-spacing:.02em;
+  pointer-events:none;white-space:nowrap;transition:color .3s;
+}
+.sel-actions{display:flex;gap:2px}
+
+/* ── Views ──────────────────────────────── */
+.view{display:none;flex-direction:column;flex:1;overflow:hidden;position:relative}
 .view.active{display:flex}
 
 /* ── Task list ──────────────────────────── */
-.tl{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 0 12px}
+.tl{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:4px 0 12px;position:relative;
+}
 .tl::-webkit-scrollbar{display:none}
 
 /* ── Task row ───────────────────────────── */
 .row{
-  display:flex;
-  align-items:center;
-  margin:1px 8px;
-  border-radius:var(--r);
-  padding:0 4px 0 0;
-  position:relative;
-  background:transparent;
-  transition:background .2s, border-radius .25s;
-  -webkit-tap-highlight-color:transparent;
+  display:flex;align-items:center;margin:1px 8px;border-radius:var(--r);
+  padding:0 4px 0 0;position:relative;background:transparent;
+  transition:background .2s,border-radius .25s;-webkit-tap-highlight-color:transparent;
 }
 .row.editing{background:var(--sel)}
-.row.drag-src{opacity:0;pointer-events:none}
+.row.selected{background:var(--sel)}
 
-/* Drop indicator */
+/* drag source: invisible but maintains list spacing */
+.row.drag-src{opacity:0!important;pointer-events:none}
+
 .drop-line{
-  display:block;height:2px;background:var(--dline);
-  margin:-1px 8px;flex-shrink:0;border-radius:0;
-  pointer-events:none;position:relative;z-index:2;
+  position:absolute;left:8px;right:8px;height:2px;
+  background:var(--dline);margin:0;flex-shrink:0;border-radius:0;
+  pointer-events:none;z-index:2;
 }
 
 /* ── Circle ─────────────────────────────── */
 .chk{width:52px;height:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .circle{
-  width:22px;height:22px;border-radius:50%;
-  border:1.75px solid var(--circ);
+  width:22px;height:22px;border-radius:50%;border:1.75px solid var(--circ);
   display:flex;align-items:center;justify-content:center;
   transition:border-color .18s,background .18s,transform .18s;flex-shrink:0;
 }
 .circle.done{background:var(--fill);border-color:var(--fill)}
+.circle.sel-check{background:var(--fill);border-color:var(--fill)}
 .circle .fa-check{font-size:10px;color:#fff;display:none}
-.circle.done .fa-check{display:block}
+.circle.done .fa-check,.circle.sel-check .fa-check{display:block}
 .row.ml .chk{align-self:flex-start}
 
 /* ── Text / textarea ─────────────────────── */
@@ -171,34 +143,40 @@ textarea,input{
   white-space:pre-wrap;cursor:text;user-select:none;min-width:0;
   transition:color .38s ease;
 }
+.e1.show-hint .txt::before{
+  content:attr(data-hint);
+  color:var(--muted);
+  font-size:var(--fs);
+  pointer-events:none;
+  position:absolute;
+  top:13px;
+}
 .inp{
-  flex:1;background:none;border:none;
-  font-size:var(--fs);font-family:inherit;color:var(--tx);
-  caret-color:var(--caret);
+  flex:1;background:none;border:none;font-size:var(--fs);font-family:inherit;
+  color:var(--tx);caret-color:var(--caret);
   padding:13px 0;resize:none;overflow:hidden;line-height:1.45;min-width:0;
 }
 .inp::placeholder{color:var(--circ)}
 
 /* ── Strike line ─────────────────────────── */
 .sline{
-  position:absolute;left:52px;right:40px;top:50%;
-  height:1.5px;background:var(--muted);
-  transform:scaleX(0);transform-origin:left center;
-  pointer-events:none;transition:transform .42s cubic-bezier(.22,1,.36,1);
+  position:absolute;left:52px;right:40px;top:50%;height:1.5px;background:var(--muted);
+  transform:scaleX(0);transform-origin:left center;pointer-events:none;
+  transition:transform .42s cubic-bezier(.22,1,.36,1);
 }
 .sline.grow{transform:scaleX(1)}
 
 /* ── Drag handle ─────────────────────────── */
 .dh{
-  width:36px;height:48px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  color:var(--icon);font-size:13px;opacity:.42;
-  cursor:grab;touch-action:none;-webkit-tap-highlight-color:transparent;
+  width:36px;height:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  color:var(--icon);font-size:13px;opacity:.42;cursor:grab;
+  touch-action:none;-webkit-tap-highlight-color:transparent;
 }
 .dh:active{cursor:grabbing;opacity:.7}
 .row.ml .dh{align-self:flex-start;padding-top:17px}
+body.selecting .dh{opacity:0;pointer-events:none}
 
-/* ── Empty slot fading ───────────────────── */
+/* ── Empty slots ─────────────────────────── */
 .e1 .circle{opacity:1}
 .e2 .circle{opacity:.42}
 .e3 .circle{opacity:.16}
@@ -235,29 +213,16 @@ textarea,input{
 .arch-empty p{font-size:14px;opacity:.55}
 
 /* ── Archive FAB ─────────────────────────── */
-/*
-  FIX: The FAB now lives INSIDE #vArch (position:absolute).
-  It enters the screen with the archive view slide animation,
-  so it "finds its place" before becoming visible — no position jerk.
-  The opacity transition handles the fade-in separately.
-*/
 #archFab{
-  position:absolute;
-  bottom:20px;
-  right:16px;
-  width:52px;height:52px;
-  border-radius:var(--r);
-  background:var(--fill);color:#fff;
-  border:none;font-size:19px;
+  position:absolute;bottom:20px;right:16px;width:52px;height:52px;
+  border-radius:var(--r);background:var(--fill);color:#fff;border:none;font-size:19px;
   display:flex;align-items:center;justify-content:center;
   box-shadow:0 4px 20px rgba(0,0,0,0.35);
-  transition:opacity .25s ease, border-radius .25s, background .25s;
-  z-index:20;
-  opacity:0;
-  pointer-events:none;
+  transition:opacity .25s ease,border-radius .25s,background .25s;
+  z-index:20;opacity:0;pointer-events:none;
 }
-#archFab.visible{opacity:1;pointer-events:all;}
-#archFab:active{opacity:.75;}
+#archFab.visible{opacity:1;pointer-events:all}
+#archFab:active{opacity:.75}
 
 /* ── Dialogs ─────────────────────────────── */
 .ov{
@@ -268,21 +233,26 @@ textarea,input{
 .ov.open{opacity:1;pointer-events:all}
 .ov.open .dlg{transform:translateY(0) scale(1)}
 .dlg{
-  background:var(--nb);border-radius:calc(var(--r) + 8px);padding:24px;width:100%;max-width:360px;
-  position:relative;box-shadow:0 24px 64px rgba(0,0,0,.5);
-  transform:translateY(16px) scale(.96);transition:transform .25s cubic-bezier(.22,1,.36,1);
+  background:var(--nb);border-radius:calc(var(--r) + 8px);padding:24px;
+  width:100%;max-width:360px;position:relative;
+  box-shadow:0 24px 64px rgba(0,0,0,.5);
+  transform:translateY(16px) scale(.96);
+  transition:transform .25s cubic-bezier(.22,1,.36,1);
   max-height:90vh;overflow-y:auto;
 }
 .dlg::-webkit-scrollbar{display:none}
+
 .dlg-x{
-  position:absolute;top:14px;right:14px;background:var(--sel);border:none;
-  width:30px;height:30px;border-radius:var(--r);color:var(--icona);font-size:13px;
-  display:flex;align-items:center;justify-content:center;transition:background .12s,border-radius .25s;
+  position:absolute;top:20px;right:20px;
+  background:var(--sel);border:none;
+  width:30px;height:30px;border-radius:var(--r);
+  color:var(--icona);font-size:13px;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .12s,border-radius .25s;
 }
 .dlg-x:active{background:var(--fill);color:#fff}
-.dlg-h{font-size:17px;font-weight:700;color:var(--tx);margin-bottom:20px;padding-right:30px}
+.dlg-h{font-size:17px;font-weight:700;color:var(--tx);margin-bottom:20px;padding-right:38px}
 
-/* Settings sections */
 .ss{margin-bottom:18px}
 .ss:last-child{margin-bottom:0}
 .ss-l{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ttl);margin-bottom:10px}
@@ -301,21 +271,24 @@ textarea,input{
 input[type=range]{flex:1;-webkit-appearance:none;height:3px;border-radius:2px;background:var(--div);cursor:pointer}
 input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--fill);border:2px solid var(--bg);box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer}
 .sv{font-size:12px;color:var(--ttl);min-width:26px;text-align:right}
-.about-row{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--sel);border:none;border-radius:var(--r);color:var(--ttl);font-size:13px;transition:all .12s;width:100%;text-align:left}
-.about-row:active{background:var(--fill);color:#fff}
-.about-row i{font-size:15px}
+.action-row{
+  display:flex;align-items:center;gap:10px;padding:11px 14px;
+  background:var(--sel);border:none;border-radius:var(--r);
+  color:var(--ttl);font-size:13px;transition:all .12s;width:100%;text-align:left;
+}
+.action-row:active{background:var(--fill);color:#fff}
+.action-row i{font-size:15px}
 .ss-divider{height:1px;background:var(--div);margin:4px 0 18px}
 .haptics-row{
   display:flex;align-items:center;justify-content:space-between;
   padding:11px 14px;background:var(--sel);border-radius:var(--r);
   cursor:pointer;-webkit-tap-highlight-color:transparent;
-  transition:background .12s, border-radius .25s;
+  transition:background .12s,border-radius .25s;
 }
 .haptics-row:active{background:var(--div)}
 .haptics-label{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ttl)}
 .haptics-label i{font-size:15px}
 
-/* Confirm dialog */
 .confirm-msg{font-size:14px;color:var(--ttl);line-height:1.5;margin-bottom:20px;margin-top:4px}
 .confirm-btns{display:flex;gap:10px}
 .confirm-btns button{flex:1;padding:11px;border:none;border-radius:var(--r);font-size:14px;font-weight:600;transition:opacity .15s}
@@ -323,7 +296,58 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .btn-cancel{background:var(--sel);color:var(--tx)}
 .btn-danger{background:#c03040;color:#fff}
 
-/* About content */
+.export-step{display:none;flex-direction:column;gap:14px}
+.export-step.active{display:flex}
+
+.export-step-label{
+  font-size:11px;font-weight:600;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ttl);
+}
+.export-choice-grid{display:flex;flex-direction:column;gap:8px}
+.export-choice{
+  display:flex;align-items:center;gap:12px;padding:13px 14px;
+  background:var(--sel);border:1.5px solid transparent;border-radius:var(--r);
+  cursor:pointer;transition:all .12s;-webkit-tap-highlight-color:transparent;
+}
+.export-choice.selected{border-color:var(--fill);background:rgba(0,0,0,0)}
+.export-choice:active{opacity:.7}
+.export-choice i{font-size:18px;color:var(--fill);width:22px;text-align:center;flex-shrink:0}
+.export-choice-text{flex:1}
+.export-choice-label{font-size:14px;font-weight:600;color:var(--tx)}
+.export-choice-sub{font-size:12px;color:var(--muted);margin-top:1px}
+.export-step-nav{display:flex;gap:10px;margin-top:2px}
+.export-back-btn{
+  padding:11px 16px;background:var(--sel);border:none;border-radius:var(--r);
+  font-size:14px;color:var(--ttl);transition:all .12s;flex-shrink:0;
+}
+.export-back-btn:active{opacity:.7}
+.export-next-btn{
+  flex:1;padding:11px;background:var(--fill);border:none;border-radius:var(--r);
+  font-size:14px;font-weight:600;color:#fff;transition:all .12s;
+}
+.export-next-btn:active{opacity:.75}
+.export-next-btn:disabled{opacity:.35;pointer-events:none}
+
+.export-success{
+  display:none;flex-direction:column;align-items:center;
+  gap:12px;padding:16px 0 4px;text-align:center;
+}
+.export-success.active{display:flex}
+.export-success-icon{
+  width:56px;height:56px;border-radius:50%;
+  background:var(--fill);display:flex;align-items:center;justify-content:center;
+  animation:successPop .3s cubic-bezier(.22,1,.36,1) both;
+}
+.export-success-icon i{font-size:24px;color:#fff}
+@keyframes successPop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+.export-success p{font-size:15px;font-weight:600;color:var(--tx)}
+.export-success span{font-size:13px;color:var(--muted)}
+.export-done-btn{
+  width:100%;padding:11px;background:var(--sel);border:none;border-radius:var(--r);
+  font-size:14px;font-weight:600;color:var(--tx);transition:all .12s;margin-top:4px;
+}
+.export-done-btn:active{opacity:.7}
+
 .ab{display:flex;flex-direction:column;align-items:center;gap:10px}
 .ab-icon{width:68px;height:68px;border-radius:18px;background:var(--fill);display:flex;align-items:center;justify-content:center;margin-bottom:2px;box-shadow:0 4px 16px rgba(0,0,0,.25)}
 .ab-icon i{font-size:32px;color:#fff}
@@ -334,10 +358,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 .ab-gh:active{background:var(--fill);color:#fff}
 .ab-copy{font-size:11px;color:var(--muted);margin-top:4px}
 
-/* Ghost */
 #ghost{position:fixed;pointer-events:none;z-index:9999;left:0;top:0;box-shadow:0 14px 44px rgba(0,0,0,.4);opacity:.92;background:var(--bg)}
 
-/* ── Animations ──────────────────────────── */
 @keyframes rIn{from{opacity:0;transform:translateX(-10px)}to{opacity:1;transform:translateX(0)}}
 .r-in{animation:rIn .22s cubic-bezier(.22,1,.36,1) both}
 @keyframes aIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:translateX(0)}}
@@ -357,7 +379,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 @keyframes slineReverse{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 .sline-rev{transform-origin:right center!important;animation:slineReverse .42s cubic-bezier(.22,1,.36,1) both}
 
-/* ── Onboarding ─────────────────────────── */
 .onboard-dlg{display:flex;flex-direction:column;align-items:center;text-align:center;padding:32px 24px 24px;gap:0;min-height:360px}
 .ob-page{display:none;flex-direction:column;align-items:center;flex:1;width:100%;animation:obFadeIn .22s ease both}
 .ob-page.active{display:flex}
@@ -387,27 +408,15 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 
 <body id="app" data-theme="slate">
 <script>
-  // Apply saved theme before first paint — runs synchronously, element already exists.
-  // Disable body transition temporarily so the initial theme is instant with no flash.
-  (function(){
-    var app = document.getElementById('app');
-    app.style.transition = 'none';
-    try {
-      var s = localStorage.getItem('pd_s');
-      if (s) {
-        var t = JSON.parse(s).theme;
-        if (t) app.dataset.theme = t;
-      }
-    } catch(e) {}
-    requestAnimationFrame(function(){
-      requestAnimationFrame(function(){
-        app.style.transition = '';
-      });
-    });
-  })();
+(function(){
+  var app = document.getElementById('app');
+  app.style.transition = 'none';
+  try { var s = localStorage.getItem('pd_s'); if (s) { var t = JSON.parse(s).theme; if (t) app.dataset.theme = t; } } catch(e) {}
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){ app.style.transition = ''; }); });
+})();
 </script>
 
-<nav class="nb">
+<nav class="nb" id="mainNb">
   <div class="ns">
     <button class="nb-btn" id="btnArch"><i class="fa-solid fa-box-archive"></i></button>
     <button class="nb-btn" id="btnBack" style="display:none"><i class="fa-solid fa-chevron-left"></i></button>
@@ -418,21 +427,26 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   </div>
 </nav>
 
+<div class="sel-nb" id="selNb">
+  <div class="ns">
+    <button class="nb-btn" id="btnSelCancel"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <span class="sel-count" id="selCount">0 selected</span>
+  <div class="sel-actions">
+    <button class="nb-btn" id="btnSelArchive" title="Archive selected"><i class="fa-solid fa-box-archive"></i></button>
+    <button class="nb-btn" id="btnSelDelete"  title="Delete selected"><i class="fa-solid fa-trash"></i></button>
+  </div>
+</div>
+
 <div class="view active" id="vMain">
   <div class="tl" id="tList"></div>
 </div>
 
 <div class="view" id="vArch">
   <div class="tl" id="aList"></div>
-  <!--
-    FIX: FAB lives inside the archive view.
-    It slides in with the view, so its position is established before
-    it fades visible — no layout jerk on appearance.
-  -->
   <button id="archFab" title="Clear all archived"><i class="fa-solid fa-trash"></i></button>
 </div>
 
-<!-- Settings dialog -->
 <div class="ov" id="ovSet">
   <div class="dlg">
     <button class="dlg-x" id="xSet"><i class="fa-solid fa-xmark"></i></button>
@@ -470,19 +484,82 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
     <div class="ss">
       <div class="haptics-row" id="hapticsToggle">
         <span class="haptics-label"><i class="fa-solid fa-mobile-vibrate"></i>Haptic Feedback</span>
-        <div class="ob-skip-circle checked" id="hapticsCircle">
-          <i class="fa-solid fa-check"></i>
-        </div>
+        <div class="ob-skip-circle checked" id="hapticsCircle"><i class="fa-solid fa-check"></i></div>
       </div>
     </div>
     <div class="ss-divider"></div>
-    <div class="ss">
-      <button class="about-row" id="btnAbout"><i class="fa-solid fa-circle-info"></i>About PebbleDo</button>
+    <div class="ss" style="display:flex;flex-direction:column;gap:10px">
+      <button class="action-row" id="btnExport"><i class="fa-solid fa-arrow-up-from-bracket"></i>Export Todos</button>
+      <button class="action-row" id="btnAbout"><i class="fa-solid fa-circle-info"></i>About PebbleDo</button>
     </div>
   </div>
 </div>
 
-<!-- Confirm clear all dialog -->
+<div class="ov" id="ovExport">
+  <div class="dlg">
+    <button class="dlg-x" id="xExport"><i class="fa-solid fa-xmark"></i></button>
+    <p class="dlg-h" id="exportTitle">Export</p>
+    <div class="export-step active" id="expStep1">
+      <p class="export-step-label">What to export</p>
+      <div class="export-choice-grid">
+        <div class="export-choice selected" data-scope="todos">
+          <i class="fa-solid fa-list-check"></i>
+          <div class="export-choice-text">
+            <div class="export-choice-label">Todos only</div>
+            <div class="export-choice-sub">Your active to-do list</div>
+          </div>
+        </div>
+        <div class="export-choice" data-scope="archive">
+          <i class="fa-solid fa-box-archive"></i>
+          <div class="export-choice-text">
+            <div class="export-choice-label">Archive only</div>
+            <div class="export-choice-sub">Completed tasks</div>
+          </div>
+        </div>
+        <div class="export-choice" data-scope="all">
+          <i class="fa-solid fa-layer-group"></i>
+          <div class="export-choice-text">
+            <div class="export-choice-label">Everything</div>
+            <div class="export-choice-sub">Todos and archive together</div>
+          </div>
+        </div>
+      </div>
+      <div class="export-step-nav">
+        <button class="export-next-btn" id="expNext1">Next <i class="fa-solid fa-arrow-right" style="font-size:12px"></i></button>
+      </div>
+    </div>
+    <div class="export-step" id="expStep2">
+      <p class="export-step-label">Format</p>
+      <div class="export-choice-grid">
+        <div class="export-choice selected" data-fmt="text">
+          <i class="fa-solid fa-align-left"></i>
+          <div class="export-choice-text">
+            <div class="export-choice-label">Plain Text</div>
+            <div class="export-choice-sub">• One task per line</div>
+          </div>
+        </div>
+        <div class="export-choice" data-fmt="markdown">
+          <i class="fa-brands fa-markdown"></i>
+          <div class="export-choice-text">
+            <div class="export-choice-label">Markdown</div>
+            <div class="export-choice-sub">- [ ] Checklist format</div>
+          </div>
+        </div>
+      </div>
+      <div class="export-step-nav">
+        <button class="export-back-btn" id="expBack2"><i class="fa-solid fa-arrow-left" style="font-size:12px"></i> Back</button>
+        <button class="export-next-btn" id="expCopy">Copy to clipboard</button>
+      </div>
+    </div>
+    <div class="export-success" id="expSuccess">
+      <div class="export-success-icon"><i class="fa-solid fa-check"></i></div>
+      <p>Copied!</p>
+      <span id="expSuccessDetail">Copied to clipboard</span>
+      <button class="export-done-btn" id="expDone">Done</button>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="ovConfirm">
   <div class="dlg">
     <button class="dlg-x" id="xConfirm"><i class="fa-solid fa-xmark"></i></button>
@@ -495,7 +572,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   </div>
 </div>
 
-<!-- About dialog -->
+<div class="ov" id="ovConfirmDel">
+  <div class="dlg">
+    <button class="dlg-x" id="xConfirmDel"><i class="fa-solid fa-xmark"></i></button>
+    <p class="dlg-h">Delete Selected</p>
+    <p class="confirm-msg" id="delConfirmMsg">Delete these todos permanently?</p>
+    <div class="confirm-btns">
+      <button class="btn-cancel" id="btnCancelDel">Cancel</button>
+      <button class="btn-danger" id="btnConfirmDel"><i class="fa-solid fa-trash"></i> Delete</button>
+    </div>
+  </div>
+</div>
+
 <div class="ov" id="ovAbout">
   <div class="dlg">
     <button class="dlg-x" id="xAbout"><i class="fa-solid fa-xmark"></i></button>
@@ -510,52 +598,41 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
   </div>
 </div>
 
-<!-- Onboarding dialog — must be before the main script -->
 <div class="ov" id="ovOnboard">
   <div class="dlg onboard-dlg">
     <button class="dlg-x" id="xOnboard"><i class="fa-solid fa-xmark"></i></button>
-
     <div class="ob-page active" id="ob1">
       <div class="ob-icon-wrap"><div class="ob-app-icon"><i class="fa-solid fa-circle-check"></i></div></div>
       <h2 class="ob-title">Welcome to<br>PebbleDo</h2>
       <p class="ob-sub">A quiet, minimal to-do list.<br>No accounts. No syncing. Just you and your tasks.</p>
     </div>
-
     <div class="ob-page" id="ob2">
       <div class="ob-icon-wrap"><div class="ob-feature-icon"><i class="fa-solid fa-pen-to-square"></i></div></div>
       <h2 class="ob-title">Write anything</h2>
-      <p class="ob-sub">Tap any row to start typing. Press <span class="ob-key">&#8629; Enter</span> to create the next task. Long tasks wrap automatically.</p>
+      <p class="ob-sub">Tap any row to start typing. Press <span class="ob-key">&#8629; Enter</span> to create the next task.</p>
     </div>
-
     <div class="ob-page" id="ob3">
       <div class="ob-icon-wrap"><div class="ob-feature-icon"><i class="fa-solid fa-circle-check"></i></div></div>
       <h2 class="ob-title">Check it off</h2>
-      <p class="ob-sub">Tap the circle on a task to archive it. It crosses out and fades away. Tap <span class="ob-key"><i class="fa-solid fa-box-archive" style="font-size:10px"></i></span> to see everything archived.</p>
+      <p class="ob-sub">Tap the circle to archive a task. Tap <span class="ob-key"><i class="fa-solid fa-box-archive" style="font-size:10px"></i></span> to see everything archived.</p>
     </div>
-
     <div class="ob-page" id="ob4">
       <div class="ob-icon-wrap"><div class="ob-feature-icon"><i class="fa-solid fa-grip-lines"></i></div></div>
-      <h2 class="ob-title">Reorder freely</h2>
-      <p class="ob-sub">Hold and drag the <span class="ob-key"><i class="fa-solid fa-grip-lines" style="font-size:10px"></i></span> grip on any task to move it to a new position.</p>
+      <h2 class="ob-title">Reorder &amp; select</h2>
+      <p class="ob-sub">Drag <span class="ob-key"><i class="fa-solid fa-grip-lines" style="font-size:10px"></i></span> to reorder. Hold any task to multi-select, then archive or delete at once.</p>
     </div>
-
     <div class="ob-page" id="ob5">
       <div class="ob-icon-wrap"><div class="ob-feature-icon"><i class="fa-solid fa-gear"></i></div></div>
       <h2 class="ob-title">Make it yours</h2>
-      <p class="ob-sub">Tap <span class="ob-key"><i class="fa-solid fa-gear" style="font-size:10px"></i></span> to pick a theme, font, size, and corner radius. Everything saves automatically.</p>
+      <p class="ob-sub">Tap <span class="ob-key"><i class="fa-solid fa-gear" style="font-size:10px"></i></span> for themes, fonts, radius, and to export your tasks.</p>
     </div>
-
     <div class="ob-nav">
       <div class="ob-dots" id="obDots">
-        <span class="ob-dot on"></span>
-        <span class="ob-dot"></span>
-        <span class="ob-dot"></span>
-        <span class="ob-dot"></span>
-        <span class="ob-dot"></span>
+        <span class="ob-dot on"></span><span class="ob-dot"></span>
+        <span class="ob-dot"></span><span class="ob-dot"></span><span class="ob-dot"></span>
       </div>
       <button class="ob-btn" id="obNext">Next</button>
     </div>
-
     <div class="ob-skip" id="obSkipWrap">
       <div class="ob-skip-circle" id="obSkipCircle"><i class="fa-solid fa-check"></i></div>
       <span>Don't show again</span>
@@ -564,42 +641,38 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;heigh
 </div>
 
 <script>
-/* ═══════════════════════════════════════════
-   STATE
-═══════════════════════════════════════════ */
-
-let tasks = [
+let tasks    = [
   { id: uid(), text: 'Tap a task to edit it' },
-  { id: uid(), text: 'Swipe the handle to reorder' },
+  { id: uid(), text: 'Hold a task to multi-select' },
   { id: uid(), text: 'Tap the circle to archive' },
 ];
-
 let archived = [];
 
-let editId      = null; // ID of the task currently being edited
-let pendingId   = null; // ID about to be edited (prevents blur flicker)
-let currentView = 'main'; // 'main' | 'arch'
+let editId    = null;
+let pendingId = null;
+let saveTimer = null;
 
-// Settings
+let currentView  = 'main';
+let isSelecting  = false;
+let selectedIds  = new Set();
+let longPressTimer = null;
+let selectModeEnterTime = 0;
+
+let exportScope = 'todos';
+let exportFmt   = 'text';
+
 let font     = 'sys';
 let theme    = 'slate';
 let fontSize = 16;
 let radius   = 10;
 let haptics  = true;
 
-// Debounce timer for auto-save while typing
-let saveTimer = null;
-
-/* ═══════════════════════════════════════════
-   HELPERS
-═══════════════════════════════════════════ */
-
 function uid() { return '_' + Math.random().toString(36).slice(2, 9); }
 
 function esc(s) {
   return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function fontStack(f) {
@@ -609,29 +682,17 @@ function fontStack(f) {
   return "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif";
 }
 
-function setVar(name, value) {
-  document.getElementById('app').style.setProperty(name, value);
-}
-
-/* ═══════════════════════════════════════════
-   PERSISTENCE
-═══════════════════════════════════════════ */
+function setVar(n, v) { document.getElementById('app').style.setProperty(n, v); }
 
 function save() {
-  // Clear any pending debounced save — this is the real save
-  clearTimeout(saveTimer);
-  saveTimer = null;
+  clearTimeout(saveTimer); saveTimer = null;
   try {
     localStorage.setItem('pd_t', JSON.stringify(tasks));
     localStorage.setItem('pd_a', JSON.stringify(archived));
-    localStorage.setItem('pd_s', JSON.stringify({
-      theme, font, fs: fontSize, r: radius, haptics
-    }));
+    localStorage.setItem('pd_s', JSON.stringify({ theme, font, fs: fontSize, r: radius, haptics }));
   } catch(e) {}
 }
 
-// FIX: debounced save for mid-edit keystrokes.
-// Ensures data is persisted even if the user doesn't formally blur/commit.
 function scheduleSave() {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(save, 800);
@@ -649,7 +710,7 @@ function load() {
       theme    = p.theme    || 'slate';
       font     = p.font     || 'sys';
       fontSize = p.fs       || 16;
-      radius   = p.r        !== undefined ? p.r       : 10;
+      radius   = p.r        !== undefined ? p.r      : 10;
       haptics  = p.haptics  !== undefined ? p.haptics : true;
     }
   } catch(e) {}
@@ -657,73 +718,68 @@ function load() {
 
 function applyAll() {
   const app = document.getElementById('app');
-  app.dataset.theme        = theme;
-  app.style.fontFamily     = fontStack(font);
+  app.dataset.theme    = theme;
+  app.style.fontFamily = fontStack(font);
   setVar('--fs', fontSize + 'px');
   setVar('--r',  radius   + 'px');
-
   document.querySelectorAll('.dot').forEach(d => d.classList.toggle('on', d.dataset.t === theme));
   document.querySelectorAll('.fp').forEach(p  => p.classList.toggle('on', p.dataset.f === font));
-
   document.getElementById('fsR').value        = fontSize;
   document.getElementById('fsV').textContent  = fontSize;
   document.getElementById('rR').value         = radius;
   document.getElementById('rV').textContent   = radius;
-
-  const hCircle = document.getElementById('hapticsCircle');
-  if (hCircle) hCircle.classList.toggle('checked', haptics);
+  const hc = document.getElementById('hapticsCircle');
+  if (hc) hc.classList.toggle('checked', haptics);
 }
-
-/* ═══════════════════════════════════════════
-   HAPTIC FEEDBACK
-═══════════════════════════════════════════ */
 
 function vibrate(pattern) {
   if (!haptics) return;
   try { navigator.vibrate && navigator.vibrate(pattern); } catch(e) {}
 }
 
-/* ═══════════════════════════════════════════
-   MULTILINE DETECTION
-═══════════════════════════════════════════ */
-
 function checkMultiline(el) {
   el.classList.toggle('ml', el.offsetHeight > 56);
 }
 
-/* ═══════════════════════════════════════════
-   RENDER — MAIN LIST
-═══════════════════════════════════════════ */
+function updateHint() {
+  const e1 = document.querySelector('.e1');
+  if (!e1) return;
+  const isEmpty = tasks.length === 0;
+  e1.classList.toggle('show-hint', isEmpty);
+  const txt = e1.querySelector('.txt');
+  if (txt) txt.dataset.hint = isEmpty ? 'Add your first task…' : '';
+}
 
 function render(anim) {
   const list = document.getElementById('tList');
 
-  // Remove rows whose tasks have been deleted
   list.querySelectorAll('.row[data-id]').forEach(el => {
     if (!tasks.find(t => t.id === el.dataset.id)) el.remove();
   });
 
-  // Create any missing rows at the correct index
   tasks.forEach((task, idx) => {
     if (!list.querySelector(`.row[data-id="${task.id}"]`)) {
       const row = makeRow(task);
       const refs = list.querySelectorAll('.row[data-id]');
-      const ref  = refs[idx] || list.querySelector('.e1') || null;
-      list.insertBefore(row, ref);
+      list.insertBefore(row, refs[idx] || list.querySelector('.e1') || null);
       if (anim) row.classList.add('r-in');
     }
   });
 
-  // Sync editing highlight on all rows (no layout reads)
   tasks.forEach(task => {
     const row = list.querySelector(`.row[data-id="${task.id}"]`);
-    if (row) row.classList.toggle('editing', editId === task.id);
+    if (!row) return;
+    row.classList.toggle('editing',  !isSelecting && editId === task.id);
+    row.classList.toggle('selected',  isSelecting && selectedIds.has(task.id));
+    const circle = row.querySelector('.circle');
+    if (circle) circle.classList.toggle('sel-check', isSelecting && selectedIds.has(task.id));
   });
 
-  // Ensure 3 empty placeholder slots
   ['e1', 'e2', 'e3'].forEach(cls => {
     if (!list.querySelector('.' + cls)) list.appendChild(makeEmpty(cls, anim));
   });
+
+  updateHint();
 }
 
 function makeRow(task) {
@@ -737,9 +793,27 @@ function makeRow(task) {
 
   row.querySelector('.chk').addEventListener('click', e => {
     e.stopPropagation();
-    doArchive(task.id, row);
+    if (Date.now() - selectModeEnterTime < 300) return;
+    if (isSelecting) toggleSelect(task.id);
+    else             doArchive(task.id, row);
   });
-  row.querySelector('.txt').addEventListener('click', () => startEdit(task.id));
+
+  row.querySelector('.txt').addEventListener('click', () => {
+    if (Date.now() - selectModeEnterTime < 300) return;
+    if (isSelecting) { toggleSelect(task.id); return; }
+    startEdit(task.id);
+  });
+
+  row.addEventListener('touchstart', e => {
+    if (isSelecting || e.target.closest('.dh') || row.classList.contains('editing')) return;
+    longPressTimer = setTimeout(() => {
+      vibrate([30, 20, 40]);
+      selectModeEnterTime = Date.now();
+      enterSelectMode(task.id);
+    }, 500);
+  }, { passive: true });
+  row.addEventListener('touchend',  () => clearTimeout(longPressTimer));
+  row.addEventListener('touchmove', () => clearTimeout(longPressTimer));
 
   const dh = row.querySelector('.dh');
   dh.addEventListener('touchstart', e => initDrag(e, task.id), { passive: false });
@@ -753,10 +827,9 @@ function makeEmpty(cls, anim) {
   const row = document.createElement('div');
   row.className = 'row ' + cls;
   if (anim) row.classList.add('e-in');
-  row.innerHTML = `
-    <div class="chk"><div class="circle"><i class="fa-solid fa-check"></i></div></div>
-    <span class="txt"></span>`;
+  row.innerHTML = `<div class="chk"><div class="circle"><i class="fa-solid fa-check"></i></div></div><span class="txt"></span>`;
   row.addEventListener('click', () => {
+    if (isSelecting) return;
     const t = { id: uid(), text: '' };
     tasks.push(t);
     save();
@@ -766,48 +839,95 @@ function makeEmpty(cls, anim) {
   return row;
 }
 
-/* ═══════════════════════════════════════════
-   ARCHIVE ANIMATION
-   1. Circle fills + pop
-   2. Text → muted colour, strike line grows L→R
-   3. Inner elements fade to opacity:0 in-place
-   4. Ghost space holds, then height collapses
-   5. Row removed; empty slots ensured
-═══════════════════════════════════════════ */
+function enterSelectMode(firstId) {
+  isSelecting = true;
+  selectedIds = new Set([firstId]);
+  document.body.classList.add('selecting');
+  document.getElementById('mainNb').style.display = 'none';
+  document.getElementById('selNb').classList.add('active');
+  updateSelUI();
+  render(false);
+}
+
+function exitSelectMode() {
+  isSelecting = false;
+  selectedIds.clear();
+  document.body.classList.remove('selecting');
+  document.getElementById('mainNb').style.display = '';
+  document.getElementById('selNb').classList.remove('active');
+  render(false);
+}
+
+function toggleSelect(id) {
+  if (selectedIds.has(id)) selectedIds.delete(id);
+  else                      selectedIds.add(id);
+  if (selectedIds.size === 0) { exitSelectMode(); return; }
+  updateSelUI();
+  const row    = document.querySelector(`.row[data-id="${id}"]`);
+  const circle = row && row.querySelector('.circle');
+  if (circle) {
+    circle.classList.toggle('sel-check', selectedIds.has(id));
+    row.classList.toggle('selected', selectedIds.has(id));
+  }
+}
+
+function updateSelUI() {
+  const n = selectedIds.size;
+  document.getElementById('selCount').textContent = n === 1 ? '1 selected' : `${n} selected`;
+}
+
+function archiveSelected() {
+  if (!selectedIds.size) return;
+  vibrate(40);
+  [...selectedIds].forEach(id => {
+    const task = tasks.find(t => t.id === id);
+    if (task) {
+      tasks    = tasks.filter(t => t.id !== id);
+      archived.unshift({ id: task.id, text: task.text });
+    }
+  });
+  save();
+  exitSelectMode();
+  updateFab();
+}
+
+function deleteSelected() {
+  if (!selectedIds.size) return;
+  const n = selectedIds.size;
+  document.getElementById('delConfirmMsg').textContent =
+    `Permanently delete ${n} task${n > 1 ? 's' : ''}? This can't be undone.`;
+  openDlg('ovConfirmDel');
+}
 
 function doArchive(id, rowEl) {
   if (editId === id) commitEdit(id, false);
-  if (rowEl.dataset.animating) return; // already mid-animation
+  if (rowEl.dataset.animating) return;
   rowEl.dataset.animating = '1';
 
   vibrate(40);
 
-  // Commit state immediately — archive list is correct from this point
   const task = tasks.find(t => t.id === id);
   if (!task) return;
   tasks    = tasks.filter(t => t.id !== id);
   archived.unshift({ id: task.id, text: task.text });
   save();
   updateFab();
+  updateHint();
 
   const circle = rowEl.querySelector('.circle');
   const txtEl  = rowEl.querySelector('.txt');
 
   rowEl.classList.add('editing');
-
-  // Step 1 — circle fills + pop animation
   circle.classList.add('done', 'pop');
   circle.addEventListener('animationend', () => circle.classList.remove('pop'), { once: true });
 
-  // Step 2 — text colour fades to muted + strike line grows L→R
   txtEl.style.transition = 'color .4s ease';
-  txtEl.style.color = 'var(--muted)';
+  txtEl.style.color      = 'var(--muted)';
   const sline = document.createElement('span');
   sline.className = 'sline';
   rowEl.appendChild(sline);
   setTimeout(() => sline.classList.add('grow'), 20);
 
-  // Step 3 — fade inner elements to opacity:0, row wrapper stays in place
   setTimeout(() => {
     if (!rowEl.isConnected) return;
     rowEl.classList.remove('editing');
@@ -818,7 +938,6 @@ function doArchive(id, rowEl) {
     });
   }, 460);
 
-  // Step 4 — hold empty ghost space, then collapse height
   setTimeout(() => {
     if (!rowEl.isConnected) return;
     const h = rowEl.offsetHeight;
@@ -827,31 +946,25 @@ function doArchive(id, rowEl) {
     rowEl.style.minHeight = '0';
     setTimeout(() => {
       if (!rowEl.isConnected) return;
-      rowEl.style.transition  = 'height .36s cubic-bezier(.4,0,.2,1), margin .36s cubic-bezier(.4,0,.2,1)';
-      rowEl.style.height      = '0';
-      rowEl.style.marginTop   = '0';
+      rowEl.style.transition   = 'height .36s cubic-bezier(.4,0,.2,1), margin .36s cubic-bezier(.4,0,.2,1)';
+      rowEl.style.height       = '0';
+      rowEl.style.marginTop    = '0';
       rowEl.style.marginBottom = '0';
     }, 260);
   }, 840);
 
-  // Step 5 — remove row, replenish empty slots
   setTimeout(() => {
     rowEl.remove();
     const list = document.getElementById('tList');
     ['e1', 'e2', 'e3'].forEach(cls => {
       if (!list.querySelector('.' + cls)) list.appendChild(makeEmpty(cls, false));
     });
+    updateHint();
   }, 1480);
 }
 
-/* ═══════════════════════════════════════════
-   ARCHIVE RENDER
-═══════════════════════════════════════════ */
-
 function renderArch(full) {
   const list = document.getElementById('aList');
-
-  // Full rebuild when opening the view or when empty state is showing
   if (full || list.querySelector('.arch-empty')) {
     list.innerHTML = '';
     if (!archived.length) { showArchEmpty(list); return; }
@@ -862,8 +975,6 @@ function renderArch(full) {
     });
     return;
   }
-
-  // Keyed update — only remove stale rows, insert new ones
   list.querySelectorAll('.ar[data-id]').forEach(el => {
     if (!archived.find(t => t.id === el.dataset.id)) el.remove();
   });
@@ -914,25 +1025,19 @@ function updateFab() {
   fab.classList.toggle('visible', currentView === 'arch' && archived.length >= 1);
 }
 
-/* ═══════════════════════════════════════════
-   UNARCHIVE — reverse of archive animation
-═══════════════════════════════════════════ */
-
 function doUnarchive(id, rowEl) {
   if (rowEl.dataset.animating) return;
   rowEl.dataset.animating = '1';
-
   vibrate(40);
 
-  // Commit state immediately
   const archTask = archived.find(x => x.id === id);
   if (!archTask) return;
   archived = archived.filter(x => x.id !== id);
   tasks.unshift({ id: archTask.id, text: archTask.text });
   save();
   updateFab();
+  updateHint();
 
-  // Shrink the circle first, then collapse the row
   const ac = rowEl.querySelector('.ac');
   ac.style.transition = 'transform .22s ease, opacity .22s ease';
   ac.style.transform  = 'scale(0)';
@@ -945,7 +1050,6 @@ function doUnarchive(id, rowEl) {
     });
   }, 200);
 
-  // In parallel: insert the task back into main with reverse animation
   setTimeout(() => {
     const list     = document.getElementById('tList');
     const row      = makeRow({ id: archTask.id, text: archTask.text });
@@ -954,21 +1058,18 @@ function doUnarchive(id, rowEl) {
 
     const circle = row.querySelector('.circle');
     const txtEl  = row.querySelector('.txt');
-
-    // Start in the "done" state
     circle.classList.add('done');
     txtEl.style.color = 'var(--muted)';
 
     const sline = document.createElement('span');
-    sline.className      = 'sline';
+    sline.className       = 'sline';
     sline.style.transform = 'scaleX(1)';
     row.appendChild(sline);
 
-    // Animate in reverse: strike shrinks R→L, text returns to normal, circle unfills
     requestAnimationFrame(() => requestAnimationFrame(() => {
       sline.classList.add('sline-rev');
-      txtEl.style.transition = 'color .4s ease';
-      txtEl.style.color      = '';
+      txtEl.style.transition  = 'color .4s ease';
+      txtEl.style.color       = '';
       circle.style.transition = 'background .3s ease, border-color .3s ease';
       circle.classList.remove('done');
     }));
@@ -983,7 +1084,6 @@ function doUnarchive(id, rowEl) {
 }
 
 function collapseRow(rowEl, done) {
-  // Fade inner children first
   [...rowEl.children].forEach(el => {
     el.style.transition = 'opacity .3s ease';
     el.style.opacity    = '0';
@@ -1003,22 +1103,17 @@ function collapseRow(rowEl, done) {
   setTimeout(() => { rowEl.remove(); done(); }, 700);
 }
 
-/* ═══════════════════════════════════════════
-   EDITING
-═══════════════════════════════════════════ */
-
 function startEdit(id) {
+  if (isSelecting) return;
   pendingId = id;
   if (editId && editId !== id) commitEdit(editId);
-  editId    = id;
-  pendingId = null;
+  editId = id; pendingId = null;
 
   const row  = document.querySelector(`.row[data-id="${id}"]`);
   if (!row) return;
   const task = tasks.find(t => t.id === id);
   if (!task) return;
 
-  // Already editing this row — just re-focus
   const existing = row.querySelector('.inp');
   if (existing) { row.classList.add('editing'); existing.focus(); return; }
 
@@ -1026,7 +1121,7 @@ function startEdit(id) {
   if (!txtEl) return;
 
   document.querySelectorAll('.row.editing').forEach(r => { if (r !== row) r.classList.remove('editing'); });
-  row.classList.remove('ml'); // reset before textarea so handle stays centred
+  row.classList.remove('ml');
   row.classList.add('editing');
 
   const ta         = document.createElement('textarea');
@@ -1044,40 +1139,23 @@ function startEdit(id) {
   }
 
   txtEl.replaceWith(ta);
-  ta.focus();
-  grow();
+  ta.focus(); grow();
   ta.setSelectionRange(ta.value.length, ta.value.length);
 
-  // FIX: update task.text on every keystroke AND schedule a debounced save.
-  // This prevents data loss if the user types but never formally blurs/commits.
-  ta.addEventListener('input', () => {
-    task.text = ta.value;
-    grow();
-    scheduleSave();
-  });
-
-  ta.addEventListener('blur', () => {
+  ta.addEventListener('input',   () => { task.text = ta.value; grow(); scheduleSave(); });
+  ta.addEventListener('blur',    () => {
     requestAnimationFrame(() => {
-      // If another row is about to be edited, don't flicker the old row
-      if (pendingId && pendingId !== id) {
-        row.classList.remove('editing');
-        editId = null;
-        return;
-      }
+      if (pendingId && pendingId !== id) { row.classList.remove('editing'); editId = null; return; }
       commitEdit(id);
     });
   });
-
   ta.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       commitEdit(id);
       const newTask = { id: uid(), text: '' };
-      const idx     = tasks.findIndex(t => t.id === id);
-      tasks.splice(idx + 1, 0, newTask);
-      save();
-      render(false);
-      startEdit(newTask.id);
+      tasks.splice(tasks.findIndex(t => t.id === id) + 1, 0, newTask);
+      save(); render(false); startEdit(newTask.id);
     } else if (e.key === 'Escape') {
       ta.blur();
     } else if (e.key === 'ArrowUp' && ta.selectionStart === 0) {
@@ -1089,14 +1167,12 @@ function startEdit(id) {
       const idx = tasks.findIndex(t => t.id === id);
       commitEdit(id, false);
       tasks = tasks.filter(t => t.id !== id);
-      save();
-      render(false);
+      save(); render(false);
       if (idx > 0 && tasks[idx - 1]) startEdit(tasks[idx - 1].id);
     }
   });
 }
 
-// Flag the incoming row on pointer-down so the blur handler knows not to flicker
 document.addEventListener('mousedown', e => {
   const txt = e.target.closest('.txt');
   if (txt) { const r = txt.closest('.row[data-id]'); if (r) pendingId = r.dataset.id; }
@@ -1106,15 +1182,11 @@ document.addEventListener('touchstart', e => {
   if (txt) { const r = txt.closest('.row[data-id]'); if (r) pendingId = r.dataset.id; }
 }, { passive: true, capture: true });
 
-// Dismiss keyboard when the user closes it via back button / swipe-down
 if (window.visualViewport) {
   let prevH = window.visualViewport.height;
   window.visualViewport.addEventListener('resize', () => {
     const h = window.visualViewport.height;
-    if (h > prevH + 80 && editId) {
-      const ta = document.querySelector('.inp');
-      if (ta) ta.blur();
-    }
+    if (h > prevH + 80 && editId) { const ta = document.querySelector('.inp'); if (ta) ta.blur(); }
     prevH = h;
   });
 }
@@ -1122,22 +1194,17 @@ if (window.visualViewport) {
 function commitEdit(id, doRender = true) {
   if (editId !== id) return;
   editId = null;
-
-  // Cancel any pending debounced save — we're about to do a real one
-  clearTimeout(saveTimer);
-  saveTimer = null;
+  clearTimeout(saveTimer); saveTimer = null;
 
   const row  = document.querySelector(`.row[data-id="${id}"]`);
   const task = tasks.find(t => t.id === id);
 
   if (row) {
     row.classList.remove('editing');
-    // Surgically replace textarea with span — no full render, no layout reads
     const ta = row.querySelector('.inp');
     if (ta) {
       const sp = document.createElement('span');
-      sp.className = 'txt';
-      // FIX: always use the in-memory task.text (already kept in sync by input listener)
+      sp.className   = 'txt';
       sp.textContent = task ? task.text : '';
       sp.addEventListener('click', () => startEdit(id));
       ta.replaceWith(sp);
@@ -1146,22 +1213,16 @@ function commitEdit(id, doRender = true) {
   }
 
   if (!task) { if (doRender) render(false); return; }
-
   if (!task.text.trim()) {
-    // Empty task — delete it
     tasks = tasks.filter(t => t.id !== id);
     if (row) row.remove();
     const list = document.getElementById('tList');
     ['e1', 'e2', 'e3'].forEach(cls => {
       if (!list.querySelector('.' + cls)) list.appendChild(makeEmpty(cls, false));
     });
-    save();
-    return;
+    save(); updateHint(); return;
   }
-
-  // FIX: always save on commit, even if text hasn't changed — this covers
-  // the case where scheduleSave() fired but the 800ms hadn't elapsed yet.
-  save();
+  save(); updateHint();
 }
 
 function nav(dir) {
@@ -1171,21 +1232,12 @@ function nav(dir) {
   if (next) startEdit(next.id);
 }
 
-/* ═══════════════════════════════════════════
-   DRAG & DROP
-═══════════════════════════════════════════ */
-
 let drag = null;
 
 function initDrag(e, tid) {
-  if (editId) {
-    // Commit current edit first, then start drag after keyboard dismiss
-    commitEdit(editId);
-    setTimeout(() => initDrag(e, tid), 80);
-    return;
-  }
-  e.preventDefault();
-  e.stopPropagation();
+  if (isSelecting) return;
+  if (editId) { commitEdit(editId); setTimeout(() => initDrag(e, tid), 80); return; }
+  e.preventDefault(); e.stopPropagation();
 
   const list = document.getElementById('tList');
   const row  = list.querySelector(`.row[data-id="${tid}"]`);
@@ -1193,13 +1245,16 @@ function initDrag(e, tid) {
 
   const cy   = e.touches ? e.touches[0].clientY : e.clientY;
   const rect = row.getBoundingClientRect();
-  const gh   = row.cloneNode(true);
-  gh.id      = 'ghost';
+
+  const gh = row.cloneNode(true);
+  gh.id    = 'ghost';
+  gh.classList.remove('editing', 'selected', 'drag-src', 'r-in');
   gh.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;border-radius:${radius}px`;
 
   vibrate([20, 20, 30]);
   document.body.appendChild(gh);
-  row.classList.add('drag-src', 'editing');
+
+  row.classList.add('drag-src');
 
   drag = {
     tid,
@@ -1218,10 +1273,11 @@ function initDrag(e, tid) {
 function onDM(e) {
   if (!drag) return;
   e.preventDefault();
-  const cy   = e.touches ? e.touches[0].clientY : e.clientY;
+  const cy = e.touches ? e.touches[0].clientY : e.clientY;
   drag.gh.style.top = (cy - drag.offsetY) + 'px';
 
-  const rows = [...document.getElementById('tList').querySelectorAll('.row[data-id]')];
+  const list2 = document.getElementById('tList');
+  const rows = [...list2.querySelectorAll('.row[data-id]')];
   let ni = tasks.length;
   for (let i = 0; i < rows.length; i++) {
     const { top, height } = rows[i].getBoundingClientRect();
@@ -1229,19 +1285,22 @@ function onDM(e) {
   }
   drag.dropIdx = ni;
 
-  const existing = document.getElementById('dropLine');
-  if (existing) existing.remove();
-  const dl = document.createElement('div');
-  dl.className = 'drop-line';
-  dl.id        = 'dropLine';
-  const list2  = document.getElementById('tList');
-  if (ni < rows.length)  list2.insertBefore(dl, rows[ni]);
-  else if (rows.length)  rows[rows.length - 1].after(dl);
+  let dl = document.getElementById('dropLine');
+  if (!dl) {
+    dl = document.createElement('div');
+    dl.className = 'drop-line'; dl.id = 'dropLine';
+    list2.appendChild(dl);
+  }
+  
+  if (ni < rows.length) {
+    dl.style.top = rows[ni].offsetTop + 'px';
+  } else if (rows.length) {
+    dl.style.top = (rows[rows.length - 1].offsetTop + rows[rows.length - 1].offsetHeight) + 'px';
+  }
 }
 
 function onDE() {
   if (!drag) return;
-
   const dl = document.getElementById('dropLine');
   if (dl) dl.remove();
 
@@ -1254,8 +1313,8 @@ function onDE() {
   const list    = document.getElementById('tList');
   const dragRow = drag.row;
 
-  // Snap transitions off on the dragged row only so the move is instant
   dragRow.style.transition = 'none';
+  dragRow.classList.remove('drag-src'); 
 
   if (from !== -1 && from !== to) {
     const [t] = tasks.splice(from, 1);
@@ -1267,8 +1326,7 @@ function onDE() {
     list.insertBefore(dragRow, refEl);
   }
 
-  list.offsetHeight; // force reflow at snapped position
-  dragRow.classList.remove('drag-src', 'editing');
+  list.offsetHeight; 
   dragRow.style.transition = '';
   drag = null;
 
@@ -1279,21 +1337,18 @@ function onDE() {
   save();
 }
 
-/* ═══════════════════════════════════════════
-   VIEW SWITCHING
-═══════════════════════════════════════════ */
-
-// Immediately remove any rows mid-animation — state was already committed
 function flushAnimatingRows() {
   const list = document.getElementById('tList');
   list.querySelectorAll('.row[data-animating]').forEach(r => r.remove());
   ['e1', 'e2', 'e3'].forEach(cls => {
     if (!list.querySelector('.' + cls)) list.appendChild(makeEmpty(cls, false));
   });
+  updateHint();
 }
 
 function showView(v) {
   flushAnimatingRows();
+  if (isSelecting) exitSelectMode();
   currentView = v;
 
   const mV = document.getElementById('vMain');
@@ -1305,8 +1360,7 @@ function showView(v) {
   document.getElementById('btnBack').style.display = v === 'arch' ? '' : 'none';
 
   const tEl = document.getElementById('nbTitle');
-  tEl.classList.remove('t-anim');
-  void tEl.offsetWidth;
+  tEl.classList.remove('t-anim'); void tEl.offsetWidth;
   tEl.textContent = v === 'arch' ? 'Archive' : 'PebbleDo';
   tEl.classList.add('t-anim');
   tEl.addEventListener('animationend', () => tEl.classList.remove('t-anim'), { once: true });
@@ -1322,18 +1376,107 @@ function showView(v) {
     ['e1', 'e2', 'e3'].forEach(cls => {
       const el = document.querySelector('.' + cls);
       if (!el) return;
-      el.classList.remove('e-in');
-      void el.offsetWidth;
-      el.classList.add('e-in');
+      el.classList.remove('e-in'); void el.offsetWidth; el.classList.add('e-in');
       el.addEventListener('animationend', () => el.classList.remove('e-in'), { once: true });
     });
     updateFab();
   }
 }
 
-/* ═══════════════════════════════════════════
-   DIALOGS
-═══════════════════════════════════════════ */
+function resetExport() {
+  exportScope = 'todos';
+  exportFmt   = 'text';
+  document.querySelectorAll('#expStep1 .export-choice').forEach((el, i) => el.classList.toggle('selected', i === 0));
+  document.querySelectorAll('#expStep2 .export-choice').forEach((el, i) => el.classList.toggle('selected', i === 0));
+  document.getElementById('expStep1').classList.add('active');
+  document.getElementById('expStep2').classList.remove('active');
+  document.getElementById('expSuccess').classList.remove('active');
+  document.getElementById('exportTitle').textContent = 'Export';
+}
+
+function buildExportText() {
+  let items = [];
+  if (exportScope === 'todos'   || exportScope === 'all') tasks.forEach(t => items.push({ text: t.text, done: false }));
+  if (exportScope === 'archive' || exportScope === 'all') archived.forEach(t => items.push({ text: t.text, done: true }));
+
+  if (exportFmt === 'text') {
+    if (exportScope === 'all') {
+      const active = items.filter(i => !i.done);
+      const done   = items.filter(i =>  i.done);
+      const lines = [];
+      if (active.length) { lines.push('Todos:');    active.forEach(i => lines.push('• ' + i.text)); }
+      if (done.length)   { lines.push('\nArchived:'); done.forEach(i  => lines.push('• ' + i.text)); }
+      return lines.join('\n');
+    }
+    return items.map(i => '• ' + i.text).join('\n');
+  }
+
+  if (exportScope === 'all') {
+    const active = items.filter(i => !i.done);
+    const done   = items.filter(i =>  i.done);
+    const lines = [];
+    if (active.length) { lines.push('## Todos');    active.forEach(i => lines.push('- [ ] ' + i.text)); }
+    if (done.length)   { lines.push('\n## Archived'); done.forEach(i  => lines.push('- [x] ' + i.text)); }
+    return lines.join('\n');
+  }
+  return items.map(i => (i.done ? '- [x] ' : '- [ ] ') + i.text).join('\n');
+}
+
+document.getElementById('expStep1').addEventListener('click', e => {
+  const choice = e.target.closest('.export-choice[data-scope]');
+  if (!choice) return;
+  exportScope = choice.dataset.scope;
+  document.querySelectorAll('#expStep1 .export-choice').forEach(el => el.classList.toggle('selected', el === choice));
+});
+
+document.getElementById('expNext1').addEventListener('click', () => {
+  document.getElementById('expStep1').classList.remove('active');
+  document.getElementById('expStep2').classList.add('active');
+  document.getElementById('exportTitle').textContent = 'Export';
+});
+
+document.getElementById('expStep2').addEventListener('click', e => {
+  const choice = e.target.closest('.export-choice[data-fmt]');
+  if (!choice) return;
+  exportFmt = choice.dataset.fmt;
+  document.querySelectorAll('#expStep2 .export-choice').forEach(el => el.classList.toggle('selected', el === choice));
+});
+
+document.getElementById('expBack2').addEventListener('click', () => {
+  document.getElementById('expStep2').classList.remove('active');
+  document.getElementById('expStep1').classList.add('active');
+});
+
+document.getElementById('expCopy').addEventListener('click', () => {
+  const text = buildExportText();
+  if (!text.trim()) return;
+
+  const scopeLabel = exportScope === 'all' ? 'todos + archive' : exportScope;
+  const fmtLabel   = exportFmt === 'markdown' ? 'Markdown' : 'plain text';
+
+  function showSuccess() {
+    document.getElementById('expStep2').classList.remove('active');
+    document.getElementById('expSuccess').classList.add('active');
+    document.getElementById('exportTitle').textContent = '';
+    document.getElementById('expSuccessDetail').textContent =
+      `${fmtLabel} · ${scopeLabel} · ${text.split('\n').filter(l => l.trim().startsWith('•') || l.trim().startsWith('-')).length} items`;
+    vibrate(40);
+  }
+
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(showSuccess).catch(showSuccess);
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+    document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+    showSuccess();
+  }
+});
+
+document.getElementById('expDone').addEventListener('click', () => closeDlg('ovExport'));
 
 function openDlg(id)  { document.getElementById(id).classList.add('open');    }
 function closeDlg(id) { document.getElementById(id).classList.remove('open'); }
@@ -1342,6 +1485,16 @@ document.getElementById('btnSet').addEventListener('click', () => openDlg('ovSet
 document.getElementById('xSet').addEventListener('click',   () => closeDlg('ovSet'));
 document.getElementById('ovSet').addEventListener('click', e => {
   if (e.target === document.getElementById('ovSet')) closeDlg('ovSet');
+});
+
+document.getElementById('btnExport').addEventListener('click', () => {
+  closeDlg('ovSet');
+  resetExport();
+  setTimeout(() => openDlg('ovExport'), 180);
+});
+document.getElementById('xExport').addEventListener('click', () => closeDlg('ovExport'));
+document.getElementById('ovExport').addEventListener('click', e => {
+  if (e.target === document.getElementById('ovExport')) closeDlg('ovExport');
 });
 
 document.getElementById('btnAbout').addEventListener('click', () => {
@@ -1358,25 +1511,36 @@ document.getElementById('btnCancelClear').addEventListener('click', () => closeD
 document.getElementById('ovConfirm').addEventListener('click', e => {
   if (e.target === document.getElementById('ovConfirm')) closeDlg('ovConfirm');
 });
-
 document.getElementById('btnConfirmClear').addEventListener('click', () => {
   vibrate([30, 20, 30, 20, 50]);
   closeDlg('ovConfirm');
   const rows = [...document.getElementById('aList').querySelectorAll('.ar[data-id]')];
   rows.forEach((r, i) => setTimeout(() => collapseRow(r, () => {}), i * 60));
   setTimeout(() => {
-    archived = [];
-    save();
+    archived = []; save();
     showArchEmpty(document.getElementById('aList'));
     updateFab();
   }, rows.length * 60 + 460);
 });
 
+document.getElementById('xConfirmDel').addEventListener('click',       () => closeDlg('ovConfirmDel'));
+document.getElementById('btnCancelDel').addEventListener('click',      () => closeDlg('ovConfirmDel'));
+document.getElementById('ovConfirmDel').addEventListener('click', e => {
+  if (e.target === document.getElementById('ovConfirmDel')) closeDlg('ovConfirmDel');
+});
+document.getElementById('btnConfirmDel').addEventListener('click', () => {
+  vibrate([30, 20, 50]);
+  closeDlg('ovConfirmDel');
+  [...selectedIds].forEach(id => { tasks = tasks.filter(t => t.id !== id); });
+  save();
+  exitSelectMode();
+});
+
 document.getElementById('archFab').addEventListener('click', () => openDlg('ovConfirm'));
 
-/* ═══════════════════════════════════════════
-   SETTINGS INPUTS
-═══════════════════════════════════════════ */
+document.getElementById('btnSelCancel').addEventListener('click',  () => exitSelectMode());
+document.getElementById('btnSelArchive').addEventListener('click', () => archiveSelected());
+document.getElementById('btnSelDelete').addEventListener('click',  () => deleteSelected());
 
 document.getElementById('themeDots').addEventListener('click', e => {
   const d = e.target.closest('.dot');
@@ -1399,15 +1563,13 @@ document.getElementById('fontPills').addEventListener('click', e => {
 document.getElementById('fsR').addEventListener('input', function() {
   fontSize = parseInt(this.value);
   document.getElementById('fsV').textContent = fontSize;
-  setVar('--fs', fontSize + 'px');
-  save();
+  setVar('--fs', fontSize + 'px'); save();
 });
 
 document.getElementById('rR').addEventListener('input', function() {
   radius = parseInt(this.value);
   document.getElementById('rV').textContent = radius;
-  setVar('--r', radius + 'px');
-  save();
+  setVar('--r', radius + 'px'); save();
 });
 
 document.getElementById('hapticsToggle').addEventListener('click', () => {
@@ -1421,6 +1583,7 @@ document.getElementById('btnBack').addEventListener('click', () => showView('mai
 
 document.addEventListener('keydown', e => {
   if (currentView !== 'main' || editId) return;
+  if (e.key === 'Escape' && isSelecting) { exitSelectMode(); return; }
   if (e.key === 'ArrowDown') { e.preventDefault(); nav(1);  }
   if (e.key === 'ArrowUp')   { e.preventDefault(); nav(-1); }
 });
@@ -1428,64 +1591,47 @@ document.addEventListener('keydown', e => {
 document.getElementById('yr').textContent = new Date().getFullYear();
 document.getElementById('ghLink').addEventListener('click', e => {
   if (typeof NativeBridge !== 'undefined' && NativeBridge.isNative()) {
-    e.preventDefault();
-    NativeBridge.openUrl('https://github.com/s17labs');
+    e.preventDefault(); NativeBridge.openUrl('https://github.com/s17labs');
   }
 });
-
-/* ═══════════════════════════════════════════
-   BOOT
-═══════════════════════════════════════════ */
 
 load();
 applyAll();
 render(true);
 
-/* ═══════════════════════════════════════════
-   ONBOARDING
-═══════════════════════════════════════════ */
-
 ;(function() {
-  const PAGES = 5;
+  const PAGES  = 5;
   let cur = 1;
-
   const overlay    = document.getElementById('ovOnboard');
   const nextBtn    = document.getElementById('obNext');
   const skipBtn    = document.getElementById('xOnboard');
   const skipWrap   = document.getElementById('obSkipWrap');
   const skipCircle = document.getElementById('obSkipCircle');
-  let dontShowChecked = false;
+  let dontShow = false;
 
   skipWrap.addEventListener('click', () => {
-    dontShowChecked = !dontShowChecked;
-    skipCircle.classList.toggle('checked', dontShowChecked);
+    dontShow = !dontShow;
+    skipCircle.classList.toggle('checked', dontShow);
   });
 
   function dismiss() {
     closeDlg('ovOnboard');
-    if (dontShowChecked) {
-      try { localStorage.setItem('pd_ob', '1'); } catch(e) {}
-    }
+    if (dontShow) { try { localStorage.setItem('pd_ob', '1'); } catch(e) {} }
   }
 
   function goTo(n) {
     document.getElementById('ob' + cur).classList.remove('active');
     cur = n;
     const pg = document.getElementById('ob' + cur);
-    pg.classList.remove('active');
-    void pg.offsetWidth; // reflow to retrigger fade
-    pg.classList.add('active');
+    pg.classList.remove('active'); void pg.offsetWidth; pg.classList.add('active');
     document.querySelectorAll('.ob-dot').forEach((d, i) => d.classList.toggle('on', i === cur - 1));
     nextBtn.textContent = cur === PAGES ? 'Get started' : 'Next';
   }
 
   nextBtn.addEventListener('click', () => {
-    if (cur < PAGES) {
-      goTo(cur + 1);
-    } else {
-      if (dontShowChecked) {
-        try { localStorage.setItem('pd_ob', '1'); } catch(e) {}
-      }
+    if (cur < PAGES) { goTo(cur + 1); }
+    else {
+      if (dontShow) { try { localStorage.setItem('pd_ob', '1'); } catch(e) {} }
       closeDlg('ovOnboard');
     }
   });
@@ -1495,9 +1641,7 @@ render(true);
 
   try {
     if (!localStorage.getItem('pd_ob')) openDlg('ovOnboard');
-  } catch(e) {
-    openDlg('ovOnboard');
-  }
+  } catch(e) { openDlg('ovOnboard'); }
 })();
 </script>
 </body>
