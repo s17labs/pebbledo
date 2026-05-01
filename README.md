@@ -40,7 +40,7 @@
 
 | Main View | Archive | Settings |
 |-----------|---------|----------|
-| Clean task list with drag handles <img width="189" height="420" alt="main-view" src="https://github.com/user-attachments/assets/29339357-9fe1-4308-8ab5-41bfdaff733a" /> | Archived completed tasks <img width="189" height="420" alt="archive-view" src="https://github.com/user-attachments/assets/f99c1b65-5077-4d5a-bfa9-599fc81fb64e" /> | Themes, fonts, and preferences <img width="189" height="420" alt="settings" src="https://github.com/user-attachments/assets/d143e10b-c56e-414e-bab5-82416ba6b5d4" /> |
+| <img width="189" height="420" alt="main-view" src="https://github.com/user-attachments/assets/29339357-9fe1-4308-8ab5-41bfdaff733a" /> | <img width="189" height="420" alt="archive-view" src="https://github.com/user-attachments/assets/f99c1b65-5077-4d5a-bfa9-599fc81fb64e" /> | <img width="189" height="420" alt="settings" src="https://github.com/user-attachments/assets/d143e10b-c56e-414e-bab5-82416ba6b5d4" /> |
 
 ---
 
