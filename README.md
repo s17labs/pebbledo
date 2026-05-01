@@ -81,6 +81,12 @@ The app is a single HTML file wrapped in an Android WebView, with a thin native 
 
 ---
 
+## Contributing
+
+Contributions are welcome! Check out the [Contributing Guide](CONTRIBUTING.md) to get started.
+
+---
+
 ## License
 
 [MIT License](LICENSE)
