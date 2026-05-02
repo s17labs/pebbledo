@@ -155,8 +155,8 @@
   }
   .btn-fill  { background: var(--fill); color: #fff; }
   .btn-fill:hover { background: #7878b8; }
-  .btn-ghost { background: var(--sel); color: var(--muted); border: 1px solid var(--div); }
-  .btn-ghost:hover { color: var(--tx); border-color: rgba(255,255,255,.15); }
+  .btn-ghost { background: var(--sel); color: var(--tx); border: 1px solid var(--div); }
+  .btn-ghost:hover { border-color: rgba(255,255,255,.15); }
 
   /* ── Phone mockup ── */
   .mockup-wrap {
@@ -165,7 +165,7 @@
     align-items: center;
     gap: 26px;
     opacity: 0;
-    animation: fadeUp .55s ease .42s forwards;
+    animation: fadeUp .55s ease .42s forwards
   }
 
   .phone {
@@ -178,7 +178,7 @@
     overflow: hidden;
     box-shadow:
       0 0 0 1px rgba(0,0,0,.5),
-      0 36px 72px rgba(0,0,0,.6),
+      0 18px 36px rgba(0,0,0,.6),
       inset 0 1px 0 rgba(255,255,255,.07);
   }
 
@@ -257,16 +257,6 @@
     overflow: hidden;
     transition: background .38s ease;
     text-align: left; /* ensure tasks are always left-aligned */
-  }
-
-  /* Fade overlay — real element so JS can update its color on theme change */
-  .mk-fade {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 52px;
-    pointer-events: none;
-    z-index: 5;
-    transition: background .38s ease;
   }
 
   /* ── Task row ── */
@@ -492,7 +482,7 @@
   <nav class="topbar">
     <!-- Home icon only, no text -->
     <a href="https://s17labs.github.io" class="topbar-btn" title="s17 Labs">
-      <i class="fa-solid fa-house"></i>
+      <i class="fa-solid fa-vial"></i>
     </a>
     <span class="topbar-title">PebbleDo</span>
     <a href="https://github.com/s17labs/pebbledo" target="_blank" class="topbar-btn" title="GitHub">
@@ -506,15 +496,15 @@
     <h1 class="hero-headline">A <em>quiet</em> little<br>to-do list.</h1>
 
     <div class="hero-tags">
+      <span class="tag">Minimal</span>
+      <span class="tag">Android</span>
       <span class="tag">No accounts</span>
       <span class="tag">No syncing</span>
-      <span class="tag">Offline-first</span>
-      <span class="tag">Customizable</span>
     </div>
 
     <div class="hero-actions">
       <a href="https://github.com/s17labs/pebbledo/releases" class="btn btn-fill" target="_blank">
-        <i class="fa-solid fa-download"></i> Download APK
+        <i class="fa-solid fa-download"></i> Download
       </a>
       <a href="https://github.com/s17labs/pebbledo" class="btn btn-ghost" target="_blank">
         <i class="fa-brands fa-github"></i> Source
@@ -580,7 +570,7 @@
           </div>
 
           <!-- Real DOM fade element — JS updates its gradient on theme change -->
-          <div class="mk-fade" id="mkFade"></div>
+          <div id="mkFade"></div>
         </div>
 
       </div>
@@ -588,27 +578,27 @@
       <!-- Switchers -->
       <div class="switchers">
         <div class="sw-group">
+          <span class="sw-label">Change the theme</span>
           <div class="theme-dots" id="themeDots">
-            <div class="theme-dot"    data-t="dark"  style="background:#3a3a50"></div>
             <div class="theme-dot on" data-t="slate" style="background:#c8d0e0"></div>
             <div class="theme-dot"    data-t="sage"  style="background:#6aaa48"></div>
             <div class="theme-dot"    data-t="rose"  style="background:#e07888"></div>
             <div class="theme-dot"    data-t="sand"  style="background:#c0a050"></div>
             <div class="theme-dot"    data-t="ocean" style="background:#2898d0"></div>
             <div class="theme-dot"    data-t="plum"  style="background:#9050d8"></div>
+            <div class="theme-dot"    data-t="dark"  style="background:#3a3a50"></div>
             <div class="theme-dot"    data-t="ember" style="background:#d05828"></div>
           </div>
-          <span class="sw-label">Change the theme</span>
         </div>
 
         <div class="sw-group">
+          <span class="sw-label">Change the font</span>
           <div class="font-pills" id="fontPills">
             <button class="fp on"    data-f="sys">System</button>
             <button class="fp"       data-f="inter">Inter</button>
             <button class="fp mono"  data-f="mono">Mono</button>
             <button class="fp serif" data-f="serif">Serif</button>
           </div>
-          <span class="sw-label">Change the font</span>
         </div>
       </div>
 
@@ -679,13 +669,13 @@
   <script>
   // ── Theme map — exact values from the app ──
   const THEMES = {
-    dark:  { bg:'#1c1c22',  nb:'#141418',  fill:'#6060a0', tx:'#e8e8ec', muted:'#55555f', circ:'rgba(255,255,255,0.25)', div:'rgba(255,255,255,0.06)', ttl:'rgba(255,255,255,0.5)',  icon:'rgba(255,255,255,0.32)', sbColor:'rgba(255,255,255,0.5)'  },
     slate: { bg:'#f0f2f5',  nb:'#e4e7ec',  fill:'#4060a0', tx:'#18202a', muted:'#90a0b8', circ:'rgba(0,0,0,0.2)',        div:'rgba(0,0,0,0.07)',        ttl:'rgba(0,0,0,0.38)',        icon:'rgba(0,0,0,0.3)',        sbColor:'rgba(0,0,0,0.4)'        },
     sage:  { bg:'#d0e8c2',  nb:'#c0dcb0',  fill:'#4a9030', tx:'#182810', muted:'#80aa68', circ:'rgba(0,0,0,0.22)',       div:'rgba(0,0,0,0.07)',        ttl:'rgba(0,0,0,0.38)',        icon:'rgba(0,0,0,0.3)',        sbColor:'rgba(0,0,0,0.4)'        },
     rose:  { bg:'#f2d4d8',  nb:'#eacace',  fill:'#b04050', tx:'#2c1016', muted:'#c07878', circ:'rgba(0,0,0,0.2)',        div:'rgba(0,0,0,0.07)',        ttl:'rgba(0,0,0,0.38)',        icon:'rgba(0,0,0,0.3)',        sbColor:'rgba(0,0,0,0.4)'        },
     sand:  { bg:'#e8e0c8',  nb:'#ddd6bc',  fill:'#907030', tx:'#28200e', muted:'#a09060', circ:'rgba(0,0,0,0.2)',        div:'rgba(0,0,0,0.07)',        ttl:'rgba(0,0,0,0.38)',        icon:'rgba(0,0,0,0.3)',        sbColor:'rgba(0,0,0,0.4)'        },
     ocean: { bg:'#0e2030',  nb:'#081828',  fill:'#3090c0', tx:'#c0e0f0', muted:'#2a5878', circ:'rgba(255,255,255,0.22)', div:'rgba(255,255,255,0.06)',  ttl:'rgba(255,255,255,0.45)', icon:'rgba(255,255,255,0.3)',  sbColor:'rgba(255,255,255,0.5)'  },
     plum:  { bg:'#28182e',  nb:'#1e1024',  fill:'#9050d8', tx:'#e8d0f4', muted:'#604878', circ:'rgba(255,255,255,0.22)', div:'rgba(255,255,255,0.06)',  ttl:'rgba(255,255,255,0.45)', icon:'rgba(255,255,255,0.3)',  sbColor:'rgba(255,255,255,0.5)'  },
+    dark:  { bg:'#1c1c22',  nb:'#141418',  fill:'#6060a0', tx:'#e8e8ec', muted:'#55555f', circ:'rgba(255,255,255,0.25)', div:'rgba(255,255,255,0.06)', ttl:'rgba(255,255,255,0.5)',  icon:'rgba(255,255,255,0.32)', sbColor:'rgba(255,255,255,0.5)'  },
     ember: { bg:'#281208',  nb:'#1e0e04',  fill:'#d05828', tx:'#f0d8c0', muted:'#6a3820', circ:'rgba(255,255,255,0.22)', div:'rgba(255,255,255,0.06)',  ttl:'rgba(255,255,255,0.45)', icon:'rgba(255,255,255,0.3)',  sbColor:'rgba(255,255,255,0.5)'  },
   };
 
