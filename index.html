@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PebbleDo — A quiet little to-do list.</title>
+  <meta name="description" content="A minimal, distraction-free task manager for Android. No accounts, no syncing — just you and your tasks.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital@1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.0/css/all.min.css">
+
+  <style>
+  :root {
+    --bg:    #1c1c22;
+    --nb:    #141418;
+    --sel:   rgba(255,255,255,0.08);
+    --div:   rgba(255,255,255,0.06);
+    --tx:    #e8e8ec;
+    --muted: #55555f;
+    --circ:  rgba(255,255,255,0.25);
+    --fill:  #6060a0;
+    --ttl:   rgba(255,255,255,0.5);
+    --r:     10px;
+    --font:  -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--tx);
+    font-family: var(--font);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  body::-webkit-scrollbar { display: none; }
+  a { color: inherit; text-decoration: none; transition: .2s; }
+
+  /* ── Topbar ── */
+  .topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 6px;
+    background: rgba(20,20,24,.85);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--div);
+  }
+
+  .topbar-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--ttl);
+    letter-spacing: .02em;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+
+  .topbar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px; height: 48px;
+    border-radius: var(--r);
+    color: rgba(255,255,255,.32);
+    font-size: 18px;
+    transition: .15s;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font);
+    text-decoration: none;
+  }
+  .topbar-btn:hover { color: rgba(255,255,255,.8); background: var(--sel); }
+
+  /* ── Hero ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 72px 24px 56px;
+  }
+
+  .hero-headline {
+    font-size: clamp(2.6rem, 8vw, 4.8rem);
+    font-weight: 700;
+    letter-spacing: -.03em;
+    line-height: 1.05;
+    color: var(--tx);
+    margin-bottom: 20px;
+    opacity: 0;
+    animation: fadeUp .5s ease .08s forwards;
+  }
+  .hero-headline em {
+    font-family: 'Lora', Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .hero-tags {
+    display: flex;
+    gap: 7px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+    opacity: 0;
+    animation: fadeUp .5s ease .2s forwards;
+  }
+  .tag {
+    font-size: 12px;
+    color: var(--muted);
+    background: var(--sel);
+    border: 1px solid var(--div);
+    border-radius: 99px;
+    padding: 4px 12px;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 9px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 56px;
+    opacity: 0;
+    animation: fadeUp .5s ease .3s forwards;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: var(--r);
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: .2s;
+  }
+  .btn-fill  { background: var(--fill); color: #fff; }
+  .btn-fill:hover { background: #7878b8; }
+  .btn-ghost { background: var(--sel); color: var(--muted); border: 1px solid var(--div); }
+  .btn-ghost:hover { color: var(--tx); border-color: rgba(255,255,255,.15); }
+
+  /* ── Phone mockup ── */
+  .mockup-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 26px;
+    opacity: 0;
+    animation: fadeUp .55s ease .42s forwards;
+  }
+
+  .phone {
+    position: relative;
+    width: 258px;
+    height: 520px;
+    border-radius: 20px;
+    border: 2px solid rgba(255,255,255,.1);
+    /* no ::before island — we removed that */
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px rgba(0,0,0,.5),
+      0 36px 72px rgba(0,0,0,.6),
+      inset 0 1px 0 rgba(255,255,255,.07);
+  }
+
+  /* ── Status bar ── */
+  .mk-sb {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    z-index: 15;
+    /* background inherits from phone, so it blends in */
+  }
+
+  .mk-time {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .01em;
+    color: var(--mk-sb-color, rgba(255,255,255,.55));
+    transition: color .38s ease;
+    font-variant-numeric: tabular-nums;
+    font-family: var(--font);
+  }
+
+  .mk-sb-icons {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--mk-sb-color, rgba(255,255,255,.55));
+    font-size: 9px;
+    transition: color .38s ease;
+  }
+
+  /* ── App navbar inside phone ── */
+  .mk-nb {
+    position: absolute;
+    top: 26px; left: 0; right: 0;  /* sits below the status bar */
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--mk-nb, #141418);
+    border-bottom: 1px solid var(--mk-div, rgba(255,255,255,0.06));
+    transition: background .38s ease, border-color .38s ease;
+    z-index: 10;
+  }
+  .mk-nb-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: .02em;
+    color: var(--mk-ttl, rgba(255,255,255,.5));
+    transition: color .38s ease;
+    pointer-events: none;
+  }
+  .mk-icon-l, .mk-icon-r {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px;
+    font-size: 14px;
+    color: var(--mk-icon, rgba(255,255,255,.32));
+    transition: color .38s ease;
+  }
+  .mk-icon-l { left: 4px; }
+  .mk-icon-r { right: 4px; }
+
+  /* ── Task list area ── */
+  .mk-list {
+    position: absolute;
+    top: 78px; /* 26px sb + 52px nb */
+    left: 0; right: 0; bottom: 0;
+    background: var(--mk-bg, #1c1c22);
+    padding: 3px 0 0;
+    overflow: hidden;
+    transition: background .38s ease;
+    text-align: left; /* ensure tasks are always left-aligned */
+  }
+
+  /* Fade overlay — real element so JS can update its color on theme change */
+  .mk-fade {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 52px;
+    pointer-events: none;
+    z-index: 5;
+    transition: background .38s ease;
+  }
+
+  /* ── Task row ── */
+  .mk-row {
+    display: flex;
+    align-items: center;
+    margin: 1px 6px;
+    border-radius: 8px;
+    padding-right: 2px;
+    text-align: left;
+  }
+  .mk-chk {
+    width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .mk-circle {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid var(--mk-circ, rgba(255,255,255,.25));
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: border-color .38s ease, background .38s ease;
+  }
+  .mk-circle.done {
+    background: var(--mk-fill, #6060a0);
+    border-color: var(--mk-fill, #6060a0);
+  }
+  .mk-circle .ck { font-size: 7px; color: #fff; display: none; }
+  .mk-circle.done .ck { display: block; }
+
+  .mk-txt {
+    flex: 1;
+    font-size: 11.5px;
+    line-height: 1.4;
+    padding: 8px 0;
+    color: var(--mk-tx, #e8e8ec);
+    transition: color .38s ease;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+  }
+  .mk-txt.done {
+    color: var(--mk-muted, #55555f);
+    text-decoration: line-through;
+    text-decoration-color: var(--mk-muted, #55555f);
+  }
+  .mk-dh {
+    width: 26px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+    color: var(--mk-icon, rgba(255,255,255,.32));
+    opacity: .4;
+    flex-shrink: 0;
+    transition: color .38s ease;
+  }
+
+  .mk-row.e2 .mk-circle { opacity: .4; }
+  .mk-row.e3 .mk-circle { opacity: .15; }
+
+  /* Phone background also needs to transition (it shows through rounded corners) */
+  .phone { transition: background .38s ease; }
+
+  /* ── Switchers ── */
+  .switchers {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+  }
+  .sw-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 9px;
+  }
+  .sw-label {
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .theme-dots {
+    display: flex;
+    gap: 9px;
+  }
+  .theme-dot {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2.5px solid transparent;
+    cursor: pointer;
+    transition: transform .12s, border-color .15s;
+    flex-shrink: 0;
+  }
+  .theme-dot.on { border-color: var(--tx); transform: scale(1.22); }
+  .theme-dot:not(.on):hover { transform: scale(1.1); }
+
+  .font-pills { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+  .fp {
+    font-family: var(--font);
+    font-size: 12px;
+    padding: 5px 13px;
+    border-radius: 99px;
+    border: 1px solid var(--div);
+    background: var(--sel);
+    color: var(--muted);
+    cursor: pointer;
+    transition: .18s;
+  }
+  .fp.mono  { font-family: 'SF Mono', 'Fira Code', monospace; }
+  .fp.serif { font-family: Georgia, serif; }
+  .fp.on { background: var(--fill); color: #fff; border-color: transparent; }
+  .fp:not(.on):hover { color: var(--tx); border-color: rgba(255,255,255,.15); }
+
+  /* ── Features ── */
+  .features {
+    max-width: 380px;
+    margin: 0 auto;
+    padding: 72px 20px 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .feat-headline {
+    font-size: clamp(1.6rem, 4vw, 2.1rem);
+    font-weight: 700;
+    letter-spacing: -.025em;
+    line-height: 1.12;
+    color: var(--tx);
+    margin-bottom: 8px;
+  }
+  .feat-headline em { font-family: 'Lora', Georgia, serif; font-style: italic; font-weight: 400; }
+  .feat-sub { font-size: 13px; color: var(--muted); margin-bottom: 32px; }
+
+  .feat-list {
+    width: 100%;
+    border: 1px solid var(--div);
+    border-radius: var(--r);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--div);
+  }
+  .feat-item {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 13px 14px;
+    background: var(--nb);
+    text-align: left;
+    transition: background .2s;
+  }
+  .feat-item:hover { background: rgba(255,255,255,0.005); }
+  .feat-icon {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: rgba(96,96,160,.14);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--fill);
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .feat-title { font-size: 13px; font-weight: 600; color: var(--tx); line-height: 1.3; }
+  .feat-desc  { font-size: 11.5px; color: var(--muted); line-height: 1.4; margin-top: 1px; }
+
+  /* ── Footer ── */
+  footer {
+    border-top: 1px solid var(--div);
+    padding: 24px 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .footer-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    transition: .2s;
+  }
+  .footer-brand .cube {
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: #ff4136;
+    transform: translateY(-0.5px);
+  }
+  .footer-brand:hover { color: var(--tx); }
+  .footer-links { display: flex; gap: 16px; align-items: center; }
+  .footer-links a { color: var(--muted); transition: .2s; }
+  .footer-links a:hover { color: var(--tx); }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .reveal {
+    opacity: 0; transform: translateY(14px);
+    transition: opacity .5s ease, transform .5s ease;
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+
+  @media (max-width: 420px) {
+    .phone { width: 224px; height: 450px; }
+    .hero-actions { flex-direction: column; align-items: center; }
+    .btn { width: 200px; justify-content: center; }
+  }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <nav class="topbar">
+    <!-- Home icon only, no text -->
+    <a href="https://s17labs.github.io" class="topbar-btn" title="s17 Labs">
+      <i class="fa-solid fa-house"></i>
+    </a>
+    <span class="topbar-title">PebbleDo</span>
+    <a href="https://github.com/s17labs/pebbledo" target="_blank" class="topbar-btn" title="GitHub">
+      <i class="fa-brands fa-github"></i>
+    </a>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+
+    <h1 class="hero-headline">A <em>quiet</em> little<br>to-do list.</h1>
+
+    <div class="hero-tags">
+      <span class="tag">No accounts</span>
+      <span class="tag">No syncing</span>
+      <span class="tag">Offline-first</span>
+      <span class="tag">Customizable</span>
+    </div>
+
+    <div class="hero-actions">
+      <a href="https://github.com/s17labs/pebbledo/releases" class="btn btn-fill" target="_blank">
+        <i class="fa-solid fa-download"></i> Download APK
+      </a>
+      <a href="https://github.com/s17labs/pebbledo" class="btn btn-ghost" target="_blank">
+        <i class="fa-brands fa-github"></i> Source
+      </a>
+    </div>
+
+    <!-- Interactive phone mockup -->
+    <div class="mockup-wrap">
+
+      <div class="phone" id="phone">
+
+        <!-- Status bar (no island — just time + icons) -->
+        <div class="mk-sb" id="mkSb">
+          <span class="mk-time" id="mkTime">9:41</span>
+          <div class="mk-sb-icons">
+            <i class="fa-solid fa-signal"></i>
+            <i class="fa-solid fa-wifi"></i>
+            <i class="fa-solid fa-battery-full"></i>
+          </div>
+        </div>
+
+        <!-- App navbar -->
+        <div class="mk-nb">
+          <i class="fa-solid fa-box-archive mk-icon-l"></i>
+          <span class="mk-nb-title">PebbleDo</span>
+          <i class="fa-solid fa-gear mk-icon-r"></i>
+        </div>
+
+        <!-- Task list -->
+        <div class="mk-list" id="mkList">
+          <div class="mk-row">
+            <div class="mk-chk"><div class="mk-circle done"><i class="fa-solid fa-check ck"></i></div></div>
+            <span class="mk-txt done">Finish homepage design</span>
+            <div class="mk-dh"><i class="fa-solid fa-grip-lines"></i></div>
+          </div>
+          <div class="mk-row">
+            <div class="mk-chk"><div class="mk-circle"><i class="fa-solid fa-check ck"></i></div></div>
+            <span class="mk-txt">Review pull request</span>
+            <div class="mk-dh"><i class="fa-solid fa-grip-lines"></i></div>
+          </div>
+          <div class="mk-row">
+            <div class="mk-chk"><div class="mk-circle"><i class="fa-solid fa-check ck"></i></div></div>
+            <span class="mk-txt">Write changelog notes</span>
+            <div class="mk-dh"><i class="fa-solid fa-grip-lines"></i></div>
+          </div>
+          <div class="mk-row">
+            <div class="mk-chk"><div class="mk-circle"><i class="fa-solid fa-check ck"></i></div></div>
+            <span class="mk-txt">Push v1.0.0 release</span>
+            <div class="mk-dh"><i class="fa-solid fa-grip-lines"></i></div>
+          </div>
+          <div class="mk-row">
+            <div class="mk-chk"><div class="mk-circle"><i class="fa-solid fa-check ck"></i></div></div>
+            <span class="mk-txt">Update README</span>
+            <div class="mk-dh"><i class="fa-solid fa-grip-lines"></i></div>
+          </div>
+          <div class="mk-row e2">
+            <div class="mk-chk"><div class="mk-circle"></div></div>
+            <span class="mk-txt"></span>
+          </div>
+          <div class="mk-row e3">
+            <div class="mk-chk"><div class="mk-circle"></div></div>
+            <span class="mk-txt"></span>
+          </div>
+
+          <!-- Real DOM fade element — JS updates its gradient on theme change -->
+          <div class="mk-fade" id="mkFade"></div>
+        </div>
+
+      </div>
+
+      <!-- Switchers -->
+      <div class="switchers">
+        <div class="sw-group">
+          <div class="theme-dots" id="themeDots">
+            <div class="theme-dot"    data-t="dark"  style="background:#3a3a50"></div>
+            <div class="theme-dot on" data-t="slate" style="background:#c8d0e0"></div>
+            <div class="theme-dot"    data-t="sage"  style="background:#6aaa48"></div>
+            <div class="theme-dot"    data-t="rose"  style="background:#e07888"></div>
+            <div class="theme-dot"    data-t="sand"  style="background:#c0a050"></div>
+            <div class="theme-dot"    data-t="ocean" style="background:#2898d0"></div>
+            <div class="theme-dot"    data-t="plum"  style="background:#9050d8"></div>
+            <div class="theme-dot"    data-t="ember" style="background:#d05828"></div>
+          </div>
+          <span class="sw-label">Change the theme</span>
+        </div>
+
+        <div class="sw-group">
+          <div class="font-pills" id="fontPills">
+            <button class="fp on"    data-f="sys">System</button>
+            <button class="fp"       data-f="inter">Inter</button>
+            <button class="fp mono"  data-f="mono">Mono</button>
+            <button class="fp serif" data-f="serif">Serif</button>
+          </div>
+          <span class="sw-label">Change the font</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features reveal">
+    <h2 class="feat-headline">Everything you need.<br><em>Nothing you don't.</em></h2>
+    <p class="feat-sub">Built to stay out of your way.</p>
+    <div class="feat-list">
+      <div class="feat-item">
+        <div class="feat-icon"><i class="fa-solid fa-list-check"></i></div>
+        <div>
+          <div class="feat-title">Add, complete &amp; archive</div>
+          <div class="feat-desc">Tap any row to write. Tap the circle to archive.</div>
+        </div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-icon"><i class="fa-solid fa-grip-lines"></i></div>
+        <div>
+          <div class="feat-title">Drag to reorder</div>
+          <div class="feat-desc">Grab the grip handle and move tasks freely.</div>
+        </div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-icon"><i class="fa-solid fa-hand-pointer"></i></div>
+        <div>
+          <div class="feat-title">Multi-select</div>
+          <div class="feat-desc">Long-press to select multiple, then bulk archive or delete.</div>
+        </div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-icon"><i class="fa-solid fa-file-export"></i></div>
+        <div>
+          <div class="feat-title">Export tasks</div>
+          <div class="feat-desc">Copy as plain text or Markdown — active, archived, or both.</div>
+        </div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-icon"><i class="fa-solid fa-mobile-vibrate"></i></div>
+        <div>
+          <div class="feat-title">Haptics &amp; animations</div>
+          <div class="feat-desc">Subtle vibrations and satisfying transitions throughout.</div>
+        </div>
+      </div>
+      <div class="feat-item">
+        <div class="feat-icon"><i class="fa-solid fa-user-slash"></i></div>
+        <div>
+          <div class="feat-title">Fully offline</div>
+          <div class="feat-desc">No account. No sync. Everything on your device.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-links">
+      <a href="https://github.com/s17labs/pebbledo" target="_blank"><i class="fa-brands fa-github"></i> Source</a>
+      <a href="https://github.com/s17labs/pebbledo/blob/main/LICENSE" target="_blank"><i class="fa-regular fa-file-lines"></i> MIT License</a>
+      <a href="https://x.com/s17HQ" target="_blank"><i class="fa-brands fa-x-twitter"></i> X/Twitter</a>
+      <a href="https://discord.gg/dDGbjKTVH2" target="_blank"><i class="fa-brands fa-discord"></i> Discord</a>
+    </div>
+    <div>© <script>document.write(new Date().getFullYear())</script> <a href="https://s17labs.github.io" class="footer-brand" target="_blank">s17 Labs</a></div>
+  </footer>
+
+  <script>
+  // ── Theme map — exact values from the app ──
+  const THEMES = {
+    dark:  { bg:'#1c1c22',  nb:'#141418',  fill:'#6060a0', tx:'#e8e8ec', muted:'#55555f', circ:'rgba(255,255,255,0.25)', div:'rgba(255,255,255,0.06)', ttl:'rgba(255,255,255,0.5)',  icon:'rgba(255,255,255,0.32)', sbColor:'rgba(255,255,255,0.5)'  },
+    slate: { bg:'#f0f2f5',  nb:'#e4e7ec',  fill:'#4060a0', tx:'#18202a', muted:'#90a0b8', circ:'rgba(0,0,0,0.2)',        div:'rgba(0,0,0,0.07)',        ttl:'rgba(0,0,0,0.38)',        icon:'rgba(0,0,0,0.3)',        sbColor:'rgba(0,0,0,0.4)'        },
+    sage:  { bg:'#d0e8c2',  nb:'#c0dcb0',  fill:'#4a9030', tx:'#182810', muted:'#80aa68', circ:'rgba(0,0,0,0.22)',       div:'rgba(0,0,0,0.07)',        ttl:'rgba(0,0,0,0.38)',        icon:'rgba(0,0,0,0.3)',        sbColor:'rgba(0,0,0,0.4)'        },
+    rose:  { bg:'#f2d4d8',  nb:'#eacace',  fill:'#b04050', tx:'#2c1016', muted:'#c07878', circ:'rgba(0,0,0,0.2)',        div:'rgba(0,0,0,0.07)',        ttl:'rgba(0,0,0,0.38)',        icon:'rgba(0,0,0,0.3)',        sbColor:'rgba(0,0,0,0.4)'        },
+    sand:  { bg:'#e8e0c8',  nb:'#ddd6bc',  fill:'#907030', tx:'#28200e', muted:'#a09060', circ:'rgba(0,0,0,0.2)',        div:'rgba(0,0,0,0.07)',        ttl:'rgba(0,0,0,0.38)',        icon:'rgba(0,0,0,0.3)',        sbColor:'rgba(0,0,0,0.4)'        },
+    ocean: { bg:'#0e2030',  nb:'#081828',  fill:'#3090c0', tx:'#c0e0f0', muted:'#2a5878', circ:'rgba(255,255,255,0.22)', div:'rgba(255,255,255,0.06)',  ttl:'rgba(255,255,255,0.45)', icon:'rgba(255,255,255,0.3)',  sbColor:'rgba(255,255,255,0.5)'  },
+    plum:  { bg:'#28182e',  nb:'#1e1024',  fill:'#9050d8', tx:'#e8d0f4', muted:'#604878', circ:'rgba(255,255,255,0.22)', div:'rgba(255,255,255,0.06)',  ttl:'rgba(255,255,255,0.45)', icon:'rgba(255,255,255,0.3)',  sbColor:'rgba(255,255,255,0.5)'  },
+    ember: { bg:'#281208',  nb:'#1e0e04',  fill:'#d05828', tx:'#f0d8c0', muted:'#6a3820', circ:'rgba(255,255,255,0.22)', div:'rgba(255,255,255,0.06)',  ttl:'rgba(255,255,255,0.45)', icon:'rgba(255,255,255,0.3)',  sbColor:'rgba(255,255,255,0.5)'  },
+  };
+
+  const FONTS = {
+    sys:   "-apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif",
+    inter: "'Inter', sans-serif",
+    mono:  "'SF Mono', 'Fira Code', monospace",
+    serif: "Georgia, 'Times New Roman', serif",
+  };
+
+  const phone  = document.getElementById('phone');
+  const mkList = document.getElementById('mkList');
+  const mkFade = document.getElementById('mkFade');
+  const mkSb   = document.getElementById('mkSb');
+
+  function applyTheme(name) {
+    const t = THEMES[name];
+    if (!t) return;
+
+    // Set phone shell background (visible in rounded corners)
+    phone.style.background = t.bg;
+    mkList.style.background = t.bg;
+
+    // Set all CSS custom properties on phone element
+    const vars = {
+      '--mk-bg':    t.bg,
+      '--mk-nb':    t.nb,
+      '--mk-fill':  t.fill,
+      '--mk-tx':    t.tx,
+      '--mk-muted': t.muted,
+      '--mk-circ':  t.circ,
+      '--mk-div':   t.div,
+      '--mk-ttl':   t.ttl,
+      '--mk-icon':  t.icon,
+    };
+    for (const [k, v] of Object.entries(vars)) phone.style.setProperty(k, v);
+
+    // Update fade gradient directly — no CSS variable inside gradient,
+    // so transition works properly via the element's own transition
+    mkFade.style.background = `linear-gradient(to bottom, transparent, ${t.bg})`;
+
+    // Update status bar color
+    mkSb.style.setProperty('--mk-sb-color', t.sbColor);
+
+    // Update theme dot selection
+    document.querySelectorAll('.theme-dot').forEach(d =>
+      d.classList.toggle('on', d.dataset.t === name)
+    );
+  }
+
+  function applyFont(name) {
+    const stack = FONTS[name] || FONTS.sys;
+    document.querySelectorAll('.mk-nb-title, .mk-txt').forEach(el =>
+      el.style.fontFamily = stack
+    );
+    document.querySelectorAll('.fp').forEach(p =>
+      p.classList.toggle('on', p.dataset.f === name)
+    );
+  }
+
+  // ── Live clock ──
+  function updateClock() {
+    const now = new Date();
+    const h   = now.getHours();
+    const m   = String(now.getMinutes()).padStart(2, '0');
+    document.getElementById('mkTime').textContent = `${h}:${m}`;
+  }
+  updateClock();
+  setInterval(updateClock, 15000);
+
+  // ── Event listeners ──
+  document.getElementById('themeDots').addEventListener('click', e => {
+    const d = e.target.closest('.theme-dot');
+    if (d) applyTheme(d.dataset.t);
+  });
+
+  document.getElementById('fontPills').addEventListener('click', e => {
+    const p = e.target.closest('.fp');
+    if (p) applyFont(p.dataset.f);
+  });
+
+  // ── Boot ──
+  applyTheme('slate');
+
+  // ── Scroll reveal ──
+  new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1 }).observe(document.querySelector('.reveal'));
+  </script>
+</body>
+</html>
