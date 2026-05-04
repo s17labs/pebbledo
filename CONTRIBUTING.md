@@ -2,6 +2,8 @@
 
 Thanks for your interest in contributing! PebbleDo is a small project, so every bit helps.
 
+For detailed technical documentation, see [DOCUMENTATION.md](DOCUMENTATION.md).
+
 ## Ways to contribute
 
 - **Report bugs** — open an [issue](https://github.com/s17labs/pebbledo/issues) with a description and steps to reproduce
@@ -43,15 +45,21 @@ The APK will be at `app/build/outputs/apk/debug/app-debug.apk`.
 ```
 app/src/main/
 ├── assets/www/
-│   └── index.html          # The entire PebbleDo web app (UI + logic)
+│   ├── index.html          # The entire PebbleDo web app (UI + logic)
+│   ├── bridge.js           # JS-side wrapper for native bridge
+│   ├── font-awesome.min.css
+│   ├── fonts/              # Inter font files
+│   └── webfonts/           # Font Awesome webfonts
 ├── kotlin/com/s17labs/pebbledo/
 │   ├── MainActivity.kt     # Android activity hosting the WebView
-│   └── NativeBridge.kt     # JS ↔ Kotlin bridge for external links
+│   └── NativeBridge.kt     # JS ↔ Kotlin bridge for native features
 └── res/
-    └── ...                 # Android resources (icons, splash, etc.)
+    └── ...                 # Android resources (icons, etc.)
 ```
 
-The core of the app lives in a single `index.html` file. The Kotlin side is a thin wrapper that provides a WebView and a native bridge for opening URLs outside the app.
+The core of the app lives in a single `index.html` file (~1186 lines). The Kotlin side is a thin wrapper that provides a WebView and a native bridge for toast, vibration, sharing, and external URLs.
+
+See [DOCUMENTATION.md](DOCUMENTATION.md) for full architecture details.
 
 ## Guidelines
 

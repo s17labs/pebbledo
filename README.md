@@ -20,19 +20,31 @@
 - **Archive** completed tasks for later reference
 - **Drag to reorder** — grab the grip handle and move tasks freely
 - **Multi-select** — long-press any task to select multiple, then bulk archive or delete
+- **Keyboard navigation** — Arrow keys, Enter (new task), Escape (cancel)
+- **Multiline tasks** — supports multiple lines with auto-growing textarea
+
+### Archive Management
+- **View archived tasks** — separate view for completed items
+- **Restore tasks** — unarchive any task back to your active list
+- **Delete individual tasks** or clear all with confirmation
 
 ### Appearance
 - **8 themes** — Slate, Sage, Rose, Sand, Ocean, Plum, Dark, and Ember
 - **4 font choices** — System, Inter, Mono, and Serif
 - **Adjustable font size** — slide between 12px and 20px
-- **Adjustable corner radius** — tune the UI roundness to your taste
+- **Adjustable corner radius** — tune the UI roundness (6px to 26px)
+
+### Export & Sharing
+- **Export tasks** — copy your list as plain text or Markdown
+- **Choose scope** — export active tasks, archived tasks, or everything
+- **Native share sheet** — share exported text directly via Android
 
 ### Extras
-- **Export tasks** — copy your list as plain text or Markdown (active, archived, or both)
+- **Multi-language support** — English and Slovenčina (Slovak)
 - **Haptic feedback** — subtle vibrations on key interactions, toggleable in settings
-- **Onboarding flow** — a brief walkthrough on first launch, with a "don't show again" option
+- **Onboarding flow** — 5-page walkthrough on first launch
 - **Persistent storage** — everything saved locally, works fully offline
-- **Smooth animations** — satisfying transitions for completing, archiving, and reordering tasks
+- **Smooth animations** — satisfying transitions for completing, archiving, and reordering
 
 ---
 
@@ -41,6 +53,20 @@
 | Main View | Archive | Settings |
 |-----------|---------|----------|
 | <img width="189" height="420" alt="main-view" src="https://github.com/user-attachments/assets/29339357-9fe1-4308-8ab5-41bfdaff733a" /> | <img width="189" height="420" alt="archive-view" src="https://github.com/user-attachments/assets/f99c1b65-5077-4d5a-bfa9-599fc81fb64e" /> | <img width="189" height="420" alt="settings" src="https://github.com/user-attachments/assets/d143e10b-c56e-414e-bab5-82416ba6b5d4" /> |
+
+---
+
+## Tech Stack
+
+| Component | Technology |
+|-----------|------------|
+| Language | Kotlin 2.0.21 |
+| Android SDK | API 26-35 |
+| Web App | HTML5, CSS3, JavaScript |
+| Build System | Gradle 8.12 |
+| Icons | Font Awesome 7.0.0 |
+
+For detailed technical documentation, see [DOCUMENTATION.md](DOCUMENTATION.md).
 
 ---
 
@@ -62,22 +88,6 @@
 ```
 
 The APK will be at `app/build/outputs/apk/debug/app-debug.apk`.
-
----
-
-## Project Structure
-
-```
-app/src/main/
-├── assets/www/
-│   └── index.html          # The entire PebbleDo web app
-├── java/.../
-│   └── MainActivity.kt     # WebView wrapper + native bridge
-└── res/
-    └── ...                 # Android resources
-```
-
-The app is a single HTML file wrapped in an Android WebView, with a thin native bridge for opening external links.
 
 ---
 
