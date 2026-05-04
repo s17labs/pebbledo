@@ -67,12 +67,14 @@ textarea,input{user-select:text;-webkit-user-select:text;accent-color:var(--fill
 .nb-title{position:absolute;left:50%;transform:translateX(-50%);font-size:15px;font-weight:600;color:var(--ttl);letter-spacing:.02em;pointer-events:none;white-space:nowrap;transition:color .4s ease;}
 .ns{display:flex;align-items:center;z-index:1}
 .nb-btn{background:none;border:none;width:48px;height:48px;border-radius:var(--r);color:var(--icon);font-size:18px;display:flex;align-items:center;justify-content:center;transition:color .15s,background-color .15s,border-radius .25s;-webkit-tap-highlight-color:transparent;}
-.nb-btn:active,.nb-btn.on{color:var(--icona);background-color:var(--sel)}
+.nb-btn:active,.nb-btn.on{color:#fff;background-color:var(--fill)}
 
 .sel-nb{display:none;align-items:center;justify-content:space-between;background-color:var(--nb);padding:0 2.5px;height:52px;flex-shrink:0;transition:background-color .4s ease;z-index:10;position:relative;}
 .sel-nb.active{display:flex}
 .sel-count{position:absolute;left:50%;transform:translateX(-50%);font-size:15px;font-weight:600;color:var(--ttl);letter-spacing:.02em;pointer-events:none;white-space:nowrap;transition:color .4s ease;}
 .sel-actions{display:flex;gap:2px}
+.sel-actions .nb-btn:active{color:#fff;background-color:var(--fill)}
+.sel-actions .nb-btn.on{color:#fff;background-color:var(--fill)}
 
 .view{display:none;flex-direction:column;flex:1;overflow:hidden;position:relative}
 .view.active{display:flex}
@@ -194,7 +196,10 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
 .export-step-label{font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--ttl);transition:color .4s ease;}
 .export-choice-grid{display:flex;flex-direction:column;gap:8px}
 .export-choice{display:flex;align-items:center;gap:12px;padding:13px 14px;background-color:var(--sel);border:1.5px solid transparent;border-radius:var(--r);cursor:pointer;transition:background-color .3s ease,border-color .3s ease;-webkit-tap-highlight-color:transparent;}
-.export-choice.selected{border-color:var(--fill);background-color:rgba(0,0,0,0)}
+.export-choice.selected{background-color:var(--fill);border-color:transparent}
+.export-choice.selected .export-choice-label{color:#fff}
+.export-choice.selected .export-choice-sub{color:rgba(255,255,255,0.8)}
+.export-choice.selected i{color:#fff}
 .export-choice:active{opacity:.7}
 .export-choice i{font-size:18px;color:var(--fill);width:22px;text-align:center;flex-shrink:0;transition:color .4s ease;}
 .export-choice-text{flex:1}
@@ -286,7 +291,35 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
 }
 .ob-lang-btn:active{opacity:.75}
 .ob-lang-btn.on{background-color:var(--fill);color:#fff;border-color:transparent}
-</style>
+@media (max-height: 450px) and (orientation: landscape){
+  .nb,.sel-nb{height:44px;padding:0 2px;}
+  .nb-btn{width:40px;height:40px;font-size:16px;}
+  .nb-title,.sel-count{font-size:13px;}
+  .ob-icon-wrap{width:72px;height:72px;margin-bottom:16px;}
+  .ob-app-icon{width:54px;height:54px;}
+  .ob-app-icon i{font-size:26px;}
+  .ob-title{font-size:18px;margin-bottom:8px;}
+  .ob-sub{font-size:12px;padding:0 8px;}
+  .ob-feature-icon{width:42px;height:42px;}
+  .ob-feature-icon i{font-size:18px;}
+  .onboard-dlg{min-height:280px;padding:24px 24px 16px;}
+  .ob-nav{margin-top:16px;}
+  .dlg{max-height:85vh;padding:20px;}
+  .tl{padding:2px 0 8px;}
+  .row{margin:1px 4px;}
+  .chk,.ac-wrap{width:44px;height:40px;}
+  .circle{width:20px;height:20px;}
+  .txt,.inp{padding:10px 0;font-size:14px;}
+  .dh{width:32px;height:40px;font-size:11px;}
+  .ar{margin:1px 4px;}
+  .at{padding:10px 0;}
+  #archFab{width:44px;height:44px;bottom:12px;right:12px;font-size:16px;}
+}
+@media (max-height: 380px) and (orientation: landscape){
+  .onboard-dlg{min-height:240px;}
+  .ob-icon-wrap{display:none;}
+  .ob-nav{margin-top:12px;}
+}
 </head>
 
 <body id="app" data-theme="slate">
@@ -426,7 +459,7 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
         </div>
       </div>
       <div class="export-step-nav">
-        <button class="export-next-btn" id="expNext1">Next <i class="fa-solid fa-arrow-right" style="font-size:12px"></i></button>
+        <button class="export-next-btn" id="expNext1"><span id="expNext1Text">Next</span> <i class="fa-solid fa-arrow-right" style="font-size:12px"></i></button>
       </div>
     </div>
     <div class="export-step" id="expStep2">
@@ -449,7 +482,7 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
       </div>
       <div class="export-step-nav">
         <button class="export-back-btn" id="expBack2"><i class="fa-solid fa-arrow-left" style="font-size:12px"></i> <span id="expBackText">Back</span></button>
-        <button class="export-next-btn" id="expCopy">Copy to clipboard</button>
+        <button class="export-next-btn" id="expCopy"><i class="fa-solid fa-clipboard"></i> <span id="expCopyText">Copy to clipboard</span></button>
       </div>
     </div>
     <div class="export-success" id="expSuccess">
@@ -550,7 +583,7 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
         <span class="ob-dot"></span><span class="ob-dot"></span>
         <span class="ob-dot"></span>
       </div>
-      <button class="ob-btn" id="obNext">Next</button>
+      <button class="ob-btn" id="obNext"><span id="obNextText">Next</span></button>
     </div>
   </div>
 </div>
@@ -572,7 +605,7 @@ const T = {
     allLabel:'Everything',allSub:'Todos and archive together',
     format:'Format',plainLabel:'Plain Text',plainSub:'\u2022 One task per line',
     mdLabel:'Markdown',mdSub:'- [ ] Checklist format',
-    copyBtn:'Copy to clipboard',back:'Back',next:'Next',getStarted:'Get started',
+    copyBtn:'Copy to clipboard',back:'Back',next:'Next',next1:'Next',getStarted:'Get started',
     copied:'Copied!',done:'Done',
     scopeTodos:'todos',scopeArchive:'archive',scopeAll:'todos + archive',
     fmtText:'plain text',fmtMd:'Markdown',
@@ -601,7 +634,7 @@ const T = {
     allLabel:'Všetko',allSub:'Úlohy aj archív spolu',
     format:'Formát',plainLabel:'Obyčajný text',plainSub:'• Jedna úloha na riadok',
     mdLabel:'Markdown',mdSub:'- [ ] Formát zoznamu',
-    copyBtn:'Kopírovať do schránky',back:'Späť',next:'Ďalej',getStarted:'Začať',
+    copyBtn:'Kopírovať do schránky',back:'Späť',    next:'Ďalej',next1:'Ďalej',getStarted:'Začať',
     copied:'Skopírované!',done:'Hotovo',
     scopeTodos:'úlohy',scopeArchive:'archív',scopeAll:'úlohy + archív',
     fmtText:'obyčajný text',fmtMd:'Markdown',
@@ -719,8 +752,9 @@ function applyLang(){
   document.getElementById('expPlainSub').textContent=t('plainSub');
   document.getElementById('expMdLabel').textContent=t('mdLabel');
   document.getElementById('expMdSub').textContent=t('mdSub');
+  document.getElementById('expNext1Text').textContent=t('next1');
   document.getElementById('expBackText').textContent=t('back');
-  document.getElementById('expCopy').childNodes[0].textContent=t('copyBtn');
+  document.getElementById('expCopyText').textContent=t('copyBtn');
   document.getElementById('expCopiedText').textContent=t('copied');
   document.getElementById('expDone').textContent=t('done');
   document.getElementById('clearTitle').textContent=t('clearTitle');
@@ -1147,36 +1181,46 @@ load();applyAll();applyLang();render(true);
    ONBOARDING
 ════════════════════════════════════════════ */
 ;(function(){
-  // 5 pages. No close button, no skip. Shown only once — flag written on completion.
-  const PAGES=5;let cur=1;
-  const nextBtn=document.getElementById('obNext');
+   // 5 pages. No close button, no skip. Shown only once — flag written on completion.
+   const PAGES=5;let cur=1;
+   const nextBtn=document.getElementById('obNext');
 
-  document.getElementById('obLangBtns').addEventListener('click',e=>{
-    const btn=e.target.closest('.ob-lang-btn');if(!btn)return;
-    setLang(btn.dataset.l);
-    document.querySelectorAll('#obLangBtns .ob-lang-btn').forEach(b=>b.classList.toggle('on',b===btn));
-    document.querySelectorAll('#settingsLangBtns .lang-btn').forEach(b=>b.classList.toggle('on',b.dataset.l===lang));
-    applyLang();nextBtn.textContent=cur===PAGES?t('getStarted'):t('next');
-  });
+   // Lock to portrait during onboarding
+   if(typeof NativeBridge!=='undefined'&&NativeBridge.setOrientation){
+     NativeBridge.setOrientation('portrait');
+   }
 
-  function goTo(n){
-    document.getElementById('ob'+cur).classList.remove('active');cur=n;
-    const pg=document.getElementById('ob'+cur);pg.classList.remove('active');void pg.offsetWidth;pg.classList.add('active');
-    document.querySelectorAll('.ob-dot').forEach((d,i)=>d.classList.toggle('on',i===cur-1));
-    nextBtn.textContent=cur===PAGES?t('getStarted'):t('next');
-  }
+   document.getElementById('obLangBtns').addEventListener('click',e=>{
+     const btn=e.target.closest('.ob-lang-btn');if(!btn)return;
+     setLang(btn.dataset.l);
+     document.querySelectorAll('#obLangBtns .ob-lang-btn').forEach(b=>b.classList.toggle('on',b===btn));
+     document.querySelectorAll('#settingsLangBtns .lang-btn').forEach(b=>b.classList.toggle('on',b.dataset.l===lang));
+     applyLang();
+     document.getElementById('obNextText').textContent=cur===PAGES?t('getStarted'):t('next');
+   });
 
-  nextBtn.addEventListener('click',()=>{
-    if(cur<PAGES){goTo(cur+1)}
-    else{
-      // Mark as seen — onboarding will not show again
-      try{localStorage.setItem('pd_ob','1')}catch(e){}
-      closeDlg('ovOnboard');
-    }
-  });
+   function goTo(n){
+     document.getElementById('ob'+cur).classList.remove('active');cur=n;
+     const pg=document.getElementById('ob'+cur);pg.classList.remove('active');void pg.offsetWidth;pg.classList.add('active');
+     document.querySelectorAll('.ob-dot').forEach((d,i)=>d.classList.toggle('on',i===cur-1));
+     document.getElementById('obNextText').textContent=cur===PAGES?t('getStarted'):t('next');
+   }
 
-  nextBtn.textContent=t('next');
-  try{if(!localStorage.getItem('pd_ob'))openDlg('ovOnboard')}catch(e){openDlg('ovOnboard')}
+   nextBtn.addEventListener('click',()=>{
+     if(cur<PAGES){goTo(cur+1)}
+     else{
+       // Mark as seen — onboarding will not show again
+       try{localStorage.setItem('pd_ob','1')}catch(e){}
+       closeDlg('ovOnboard');
+       // Restore orientation to system default
+       if(typeof NativeBridge!=='undefined'&&NativeBridge.setOrientation){
+         NativeBridge.setOrientation('unspecified');
+       }
+     }
+   });
+
+   document.getElementById('obNextText').textContent=t('next');
+   try{if(!localStorage.getItem('pd_ob'))openDlg('ovOnboard')}catch(e){openDlg('ovOnboard')}
 })();
 </script>
 </body>
