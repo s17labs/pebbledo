@@ -20,31 +20,26 @@
 - **Archive** completed tasks for later reference
 - **Drag to reorder** — grab the grip handle and move tasks freely
 - **Multi-select** — long-press any task to select multiple, then bulk archive or delete
-- **Keyboard navigation** — Arrow keys, Enter (new task), Escape (cancel)
-- **Multiline tasks** — supports multiple lines with auto-growing textarea
+- **Multiline tasks** supports multiple lines
 
 ### Archive Management
-- **View archived tasks** — separate view for completed items
-- **Restore tasks** — unarchive any task back to your active list
-- **Delete individual tasks** or clear all with confirmation
+- **View archived and restore tasks** back to your active list
+- **Delete individual tasks** or clear all
 
 ### Appearance
 - **8 themes** — Slate, Sage, Rose, Sand, Ocean, Plum, Dark, and Ember
 - **4 font choices** — System, Inter, Mono, and Serif
-- **Adjustable font size** — slide between 12px and 20px
-- **Adjustable corner radius** — tune the UI roundness (6px to 26px)
+- **Adjustable font size and corner radius** — tune the UI font and roundness to your liking
 
 ### Export & Sharing
 - **Export tasks** — copy your list as plain text or Markdown
 - **Choose scope** — export active tasks, archived tasks, or everything
-- **Native share sheet** — share exported text directly via Android
 
 ### Extras
 - **Multi-language support** — English and Slovenčina (Slovak)
 - **Haptic feedback** — subtle vibrations on key interactions, toggleable in settings
 - **Onboarding flow** — 5-page walkthrough on first launch
 - **Persistent storage** — everything saved locally, works fully offline
-- **Smooth animations** — satisfying transitions for completing, archiving, and reordering
 
 ---
 
