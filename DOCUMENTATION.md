@@ -10,20 +10,20 @@ PebbleDo uses a **WebView-as-app** pattern where the entire application lives in
 
 ```
 ┌─────────────────────────────────────────────┐
-│           Android WebView                   │
+│           Android WebView                           │
 │  ┌───────────────────────────────────────┐  │
-│  │       index.html (HTML/CSS/JS)        │  │
-│  │  - UI rendering                       │  │
-│  │  - State management (localStorage)    │  │
-│  │  - All app logic                      │  │
+│  │       index.html (HTML/CSS/JS)               │  │
+│  │  - UI rendering                              │  │
+│  │  - State management (localStorage)           │  │
+│  │  - All app logic                             │  │
 │  └───────────────────────────────────────┘  │
-│                  ↕                          │
+│                  ↕                                  │
 │  ┌───────────────────────────────────────┐  │
-│  │      NativeBridge.kt (Kotlin)         │  │
-│  │  - Toast notifications                │  │
-│  │  - Haptic feedback                    │  │
-│  │  - Native share sheet                 │  │
-│  │  - External URL handling              │  │
+│  │      NativeBridge.kt (Kotlin)                │  │
+│  │  - Toast notifications                       │  │
+│  │  - Haptic feedback                           │  │
+│  │  - Native share sheet                        │  │
+│  │  - External URL handling                     │  │
 │  └───────────────────────────────────────┘  │
 └─────────────────────────────────────────────┘
 ```
