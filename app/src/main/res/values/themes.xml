@@ -2,11 +2,12 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!--
         Theme.WebShell
-        A transparent, edge-to-edge theme that gets out of the way
+        An edge-to-edge theme that gets out of the way
         and lets your web app control all visual styling.
 
         Key attributes:
-        - windowBackground: transparent to avoid white flash before HTML loads
+        - windowBackground: black to avoid a flash before HTML loads
+          (MainActivity also sets the WebView background to match the theme)
         - statusBarColor / navigationBarColor: transparent for edge-to-edge
         - windowActionBar: false — no native action bar (your web app is the UI)
     -->

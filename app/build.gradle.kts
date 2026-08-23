@@ -1,4 +1,5 @@
 import java.net.URL
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -6,6 +7,14 @@ plugins {
 }
 
 val assetsDir = file("src/main/assets/www")
+
+// Optional release signing: if a keystore.properties file exists at the repo
+// root, a "release" signing config is created from it. Otherwise release APKs
+// are built unsigned (CI can inject the file from secrets).
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) keystorePropsFile.inputStream().use { load(it) }
+}
 
 tasks.register<DefaultTask>("downloadAssets") {
     group = "build"
@@ -82,12 +91,23 @@ android {
     defaultConfig {
         // ── Change these to match your app ────────────
         applicationId = "com.s17labs.pebbledo"
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
         // ──────────────────────────────────────────────
 
         minSdk = 26
         targetSdk = 35
+    }
+
+    signingConfigs {
+        if (keystorePropsFile.exists()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -98,6 +118,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            if (keystorePropsFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
         debug {
             isDebuggable = true

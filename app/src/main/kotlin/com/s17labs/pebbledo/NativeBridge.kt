@@ -156,15 +156,22 @@ class NativeBridge(private val activity: MainActivity) {
      * Generic event emitter from JS to native.
      * JS: NativeBridge.emit("eventName", { key: "value" })
      *
-     * Add your event handlers in the when() block below.
+     * Handled events:
+     *   - "exit" → exit the app (back button reached the root UI state)
+     *   - "bg"   → update the WebView background to match the web theme
      */
     @JavascriptInterface
     fun emit(event: String, payload: String) {
         try {
             val data = JSONObject(payload)
             when (event) {
-                // Add your custom events here:
-                // "myEvent" -> handleMyEvent(data)
+                "exit" -> activity.runOnUiThread { activity.requestExitApp() }
+                "bg" -> {
+                    val color = data.optString("color")
+                    if (color.isNotEmpty()) {
+                        activity.runOnUiThread { activity.applyBackground(color) }
+                    }
+                }
             }
         } catch (e: Exception) {
             // Malformed payload — ignore or log

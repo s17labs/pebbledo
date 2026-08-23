@@ -24,9 +24,20 @@ PebbleDo uses a **WebView-as-app** pattern where the entire application lives in
 │  │  - Haptic feedback                           │  │
 │  │  - Native share sheet                        │  │
 │  │  - External URL handling                     │  │
+│  │  - Back-button dispatch / app exit           │  │
+│  │  - Theme background sync                     │  │
 │  └───────────────────────────────────────┘  │
 └─────────────────────────────────────────────┘
 ```
+
+### Back-Button Contract
+
+The web app is a single-page app with internal UI state, so every hardware
+back press is dispatched to JavaScript as a `backButton` bridge event
+(`window.__bridge_backButton`). JS pops one UI level at a time: topmost
+dialog → multi-select mode → Archive view → back to Main. When nothing is
+left, JS emits `Native.emit("exit")` and the native side exits the app.
+The forced onboarding flow consumes back presses without dismissing.
 
 ---
 
@@ -51,9 +62,12 @@ PebbleDo uses a **WebView-as-app** pattern where the entire application lives in
 
 ```
 pebbledo/
+├── .github/workflows/
+│   ├── ci.yml                    # Debug APK build on push/PR
+│   └── release.yml               # Tag-triggered release builds & publishing
 ├── app/src/main/
 │   ├── assets/www/
-│   │   ├── index.html           # Complete web app (~1186 lines)
+│   │   ├── index.html           # Complete web app (~1200 lines)
 │   │   ├── bridge.js            # JS-side wrapper for native bridge
 │   │   ├── font-awesome.min.css # Font Awesome 7.0.0
 │   │   ├── fonts/               # Inter font files (woff2)
@@ -98,10 +112,11 @@ pebbledo/
 Single Activity hosting the WebView.
 
 **Responsibilities:**
-- Configures WebView settings (JavaScript, DOM storage, file access, zoom)
+- Configures WebView settings (JavaScript, DOM storage, zoom; file access off)
 - Attaches `NativeBridge` as `window.Native` JavaScript interface
 - Handles external URL navigation (opens in system browser)
-- Manages hardware back button
+- Dispatches hardware back button to JS (`backButton` event), exits on request
+- Syncs WebView background color with the active web theme (`bg` event)
 - Implements edge-to-edge display (draws behind system bars)
 
 **Key WebView settings:**
@@ -109,7 +124,7 @@ Single Activity hosting the WebView.
 webView.settings.apply {
     javaScriptEnabled = true
     domStorageEnabled = true
-    setAllowFileAccess(true)
+    allowFileAccess = false   // file:///android_asset works regardless
     builtInZoomControls = false
     displayZoomControls = false
 }
@@ -126,9 +141,9 @@ Provides native Android functionality to JavaScript via `@JavascriptInterface`.
 | `showToast(message)` | Display native toast notifications | Main thread |
 | `getDeviceInfo()` | Returns JSON with device model, manufacturer, SDK, app version | Main thread |
 | `openUrl(url)` | Opens URL in system browser | Main thread |
-| `vibrate(durationMs)` | Haptic feedback vibration | Main thread |
+| `vibrate(durationMs)` | Haptic feedback vibration (used for all haptics; WebView has no `navigator.vibrate`) | Main thread |
 | `share(text)` | Opens native share sheet | Main thread |
-| `emit(event, payload)` | Generic event bus from JS to native | Main thread |
+| `emit(event, payload)` | Generic event bus from JS to native. Handled events: `"exit"` (leave the app), `"bg"` (`{color}` — sync WebView background to theme) | Main thread |
 
 All UI operations run on the main thread via `runOnUiThread {}`.
 
@@ -144,6 +159,7 @@ JavaScript-side wrapper for the native bridge with graceful fallbacks for deskto
 - `NativeBridge.share(text)`
 - `NativeBridge.emit(event, payload)`
 - `NativeBridge.on(event, callback)` — register event listeners
+  (PebbleDo registers `backButton` — see the Back-Button Contract above)
 
 ---
 
@@ -156,41 +172,41 @@ The entire web app lives in a single `index.html` file containing:
 
 ### State Management
 
+State is persisted to `localStorage` under three keys plus an onboarding flag:
+
 ```javascript
-// Persisted to localStorage
+// localStorage keys
+"pd_t"   → JSON array of active tasks    [{ id, text }]
+"pd_a"   → JSON array of archived tasks  [{ id, text }]
+"pd_s"   → JSON settings object:
 {
-  "todos": [...],        // Active tasks
-  "archived": [...],     // Archived tasks
-  "settings": {
-    "theme": "slate",
-    "font": "system",
-    "fontSize": 16,
-    "cornerRadius": 16,
-    "haptics": true,
-    "language": "en",
-    "onboardingComplete": true
-  }
+  "theme": "slate",     // slate|sage|rose|sand|ocean|plum|dark|ember
+  "font": "sys",        // sys|inter|mono|serif
+  "fs": 16,             // font size (px)
+  "r": 10,              // corner radius (px)
+  "haptics": true,
+  "lang": "en"          // en|sk
 }
+"pd_ob"  → "1" once the onboarding flow has been completed
 ```
 
 ### Key JavaScript Functions
 
 | Function | Purpose |
 |----------|---------|
-| `loadState()` | Load tasks and settings from localStorage |
-| `saveState()` | Persist current state to localStorage |
-| `addTodo(text)` | Create new task |
-| `toggleTodo(index)` | Toggle task completion |
-| `archiveTodo(index)` | Move task to archive |
-| `deleteTodo(index)` | Delete task from active list |
-| `unarchiveTodo(index)` | Restore task from archive |
-| `reorderTodos(from, to)` | Reorder tasks via drag-and-drop |
-| `enterMultiSelect(index)` | Enter multi-select mode |
-| `toggleMultiSelect(index)` | Toggle task selection |
-| `bulkArchive()` | Archive all selected tasks |
-| `bulkDelete()` | Delete all selected tasks |
-| `exportTodos(format, scope)` | Export as text or markdown |
-| `showOnboarding()` | Display onboarding flow |
+| `load()` / `save()` / `scheduleSave()` | localStorage persistence (validated on load) |
+| `render(anim)` / `renderArch(full)` | Diff-render task & archive lists |
+| `makeRow(task)` / `makeArchRow(task)` | Build DOM rows with handlers |
+| `startEdit(id)` / `commitEdit(id)` | Inline textarea editing |
+| `doArchive(id, rowEl)` / `doUnarchive(id, rowEl)` | Animated move between lists |
+| `enterSelectMode(firstId)` / `exitSelectMode()` | Multi-select mode |
+| `archiveSelected()` / `deleteSelected()` | Bulk operations |
+| `initDrag(e, tid)` / `onDM(e)` / `onDE()` | Drag & drop reordering |
+| `buildExportText()` | Returns `{ text, count }` for the chosen scope/format |
+| `handleBack()` | Pops one UI level; emits `exit` when at root |
+| `vibrate(pattern)` / `toast(msg)` | Native-routed haptics & toasts |
+| `notifyBg()` | Pushes current theme background to the shell |
+| `applyLang()` / `setLang(l)` | Translation system (en/sk) |
 
 ### Themes
 
@@ -216,12 +232,36 @@ Defined as CSS custom properties on `:root`:
 | Command | Description |
 |---------|-------------|
 | `./gradlew assembleDebug` | Build debug APK → `app/build/outputs/apk/debug/app-debug.apk` |
-| `./gradlew assembleRelease` | Build release APK (minified, ProGuard) |
+| `./gradlew assembleRelease` | Build release APK (minified, ProGuard; signed if `keystore.properties` exists) |
 | `./gradlew installDebug` | Install debug APK to connected device/emulator |
 | `./gradlew downloadAssets` | Download Font Awesome & Inter fonts |
 | `./gradlew tasks` | List all available Gradle tasks |
 
-The `downloadAssets` task is automatically triggered before `merge*` and `assemble*` tasks.
+The `downloadAssets` task is automatically triggered before `merge*` and `assemble*` tasks
+(requires network access on first run / after asset changes).
+
+### Release Signing (optional)
+
+If a `keystore.properties` file exists at the repo root:
+
+```properties
+storeFile=path/to/release.keystore   # relative to repo root, or absolute
+storePassword=…
+keyAlias=…
+keyPassword=…
+```
+
+…a `release` signing config is created and applied automatically. The file is
+gitignored. Without it, release APKs build unsigned.
+
+### CI / Release Workflows (.github/workflows)
+
+| Workflow | Trigger | What it does |
+|----------|---------|--------------|
+| `ci.yml` | push to `main`, PRs, manual | Validates the Gradle wrapper, builds a debug APK, uploads it as an artifact |
+| `release.yml` | tag push `v*`, manual | Builds debug + release APKs, signs if signing secrets are configured (`ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`), renames artifacts to `PebbleDo-<version>-*.apk`, generates SHA-256 checksums, publishes a GitHub Release with auto-generated notes |
+
+To cut a release: `git tag v1.1.0 && git push origin v1.1.0`.
 
 ### Build Configuration
 
@@ -246,13 +286,13 @@ The `downloadAssets` task is automatically triggered before `merge*` and `assemb
 | File | Purpose |
 |------|---------|
 | `build.gradle.kts` (root) | Top-level build file with plugin declarations |
-| `app/build.gradle.kts` | App module config, downloadAssets task, build settings |
+| `app/build.gradle.kts` | App module config, downloadAssets task, optional signing config, build settings |
 | `settings.gradle.kts` | Plugin repositories, dependency resolution, project name |
-| `gradle.properties` | JVM args, build caching, AndroidX, Kotlin settings |
+| `gradle.properties` | JVM args, build caching — portable only; machine-specific overrides (JDK path, aapt2 override) belong in `~/.gradle/gradle.properties` or env vars |
 | `local.properties` | Local SDK path (sdk.dir) — not committed |
 | `gradle/libs.versions.toml` | Version catalog for AGP, Kotlin, dependencies |
 | `gradle/wrapper/gradle-wrapper.properties` | Gradle 8.12 distribution |
-| `AndroidManifest.xml` | App permissions (VIBRATE), activity config, hardware acceleration |
+| `AndroidManifest.xml` | App permissions (INTERNET, VIBRATE), activity config, hardware acceleration |
 
 ---
 
@@ -260,6 +300,7 @@ The `downloadAssets` task is automatically triggered before `merge*` and `assemb
 
 Declared in `AndroidManifest.xml`:
 - `android.permission.VIBRATE` — for haptic feedback
+- `android.permission.INTERNET` — reserved for future fetch/API use; safe to remove for a strictly offline build
 
 ---
 

@@ -18,10 +18,6 @@ import androidx.core.view.WindowCompat
  * actually work with are:
  *   - assets/www/   → your HTML/CSS/JS app
  *   - NativeBridge.kt → native API methods callable from JS
- *
- * For configuration options, see:
- *   - docs/project-structure.md
- *   - docs/gotchas-and-tips.md
  */
 class MainActivity : AppCompatActivity() {
 
@@ -30,12 +26,15 @@ class MainActivity : AppCompatActivity() {
     internal lateinit var webView: WebView
     private lateinit var bridge: NativeBridge
 
+    // Set once the page has finished loading. Until then, back presses
+    // exit immediately instead of dispatching into a not-yet-ready page.
+    internal var pageReady = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         // Draw behind system bars for edge-to-edge display.
         // In your CSS, use env(safe-area-inset-*) to add padding.
-        // Remove this line if you prefer the default system bar behaviour.
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         bridge = NativeBridge(this)
@@ -48,26 +47,21 @@ class MainActivity : AppCompatActivity() {
                 // Enables localStorage and sessionStorage
                 domStorageEnabled = true
 
-                // Enables loading files from assets/www/
-                allowFileAccess = true
+                // file:///android_asset works regardless; this only governs
+                // the broader file system, so keep it off for security
+                allowFileAccess = false
 
                 // Optional: disable zoom controls for a more app-like feel
                 setSupportZoom(false)
                 builtInZoomControls = false
                 displayZoomControls = false
-
-                // Optional: set a custom user agent
-                // userAgentString = "$userAgentString WebShell/1.0"
             }
 
             // Attach the native bridge.
             // Accessible in JS as window.Native.*
-            // Add your methods in NativeBridge.kt.
             addJavascriptInterface(bridge, "Native")
 
             webViewClient = object : WebViewClient() {
-                // Return false to let the WebView handle the navigation.
-                // Return true to cancel/block the navigation.
                 override fun shouldOverrideUrlLoading(
                     view: WebView,
                     request: WebResourceRequest
@@ -85,10 +79,15 @@ class MainActivity : AppCompatActivity() {
                     // All other schemes (intent://, javascript:, market://, etc.) are silently blocked
                     return true
                 }
+
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    pageReady = true
+                }
             }
 
-            // Match your app's background to avoid white flash on load.
-            setBackgroundColor(Color.parseColor("#000000"))
+            // Match the default (slate) theme background to avoid a flash on load.
+            // The web app updates this at runtime via Native.emit("bg", {color}).
+            setBackgroundColor(Color.parseColor("#F0F2F5"))
 
             // Enable Chrome DevTools inspection in debug builds.
             // NEVER ship with this enabled in production.
@@ -97,7 +96,6 @@ class MainActivity : AppCompatActivity() {
             }
 
             // Load the entry point of your web app.
-            // To change the entry file, update the URL below.
             loadUrl("file:///android_asset/www/index.html")
         }
 
@@ -106,23 +104,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Handle the hardware/gesture back button.
-     * Navigates back in WebView history if possible, otherwise exits the app.
+     * Hardware/gesture back button.
      *
-     * If your JS app handles all navigation internally (no actual page loads),
-     * you may want to fire a JS event here instead of calling webView.goBack().
-     * See docs/gotchas-and-tips.md for details.
+     * The web app is a single-page app with internal UI state (dialogs,
+     * selection mode, archive view), so before leaving we hand the press
+     * to JavaScript via the __bridge_backButton event. If there is nothing
+     * left to close, JS calls Native.emit("exit") which lands in
+     * requestExitApp() below.
      */
     private fun setupBackNavigation() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (webView.canGoBack()) {
-                    webView.goBack()
-                } else {
-                    isEnabled = false
-                    onBackPressedDispatcher.onBackPressed()
+                if (!pageReady) {
+                    requestExitApp()
+                    return
                 }
+                webView.evaluateJavascript(
+                    "if(window.__bridge_backButton)window.__bridge_backButton();",
+                    null
+                )
             }
         })
+    }
+
+    /** Exit the app — invoked from JS via Native.emit("exit"). */
+    internal fun requestExitApp() {
+        isEnabled = false
+        onBackPressedDispatcher.onBackPressed()
+    }
+
+    /** Update the WebView background to match the current web theme. */
+    internal fun applyBackground(color: String) {
+        try {
+            webView.setBackgroundColor(Color.parseColor(color))
+        } catch (_: IllegalArgumentException) {
+        }
     }
 }
