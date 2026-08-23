@@ -26,6 +26,8 @@ render.experimental.xml
 # Keystore files
 *.jks
 *.keystore
+# …except the committed PUBLIC release keystore (FOSS-style public signing)
+!signing/release.keystore
 keystore.properties
 keystore.properties.b64
 

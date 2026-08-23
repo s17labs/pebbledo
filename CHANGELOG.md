@@ -30,7 +30,8 @@ Shell synced with upstream WebShell 1.0.2, plus a round of functional fixes acro
 ### Added
 
 - **CI workflow** — every push/PR gets wrapper validation and a cached debug-APK build.
-- **Automated releases** — pushing a `v*` tag builds debug + release APKs, optionally signs them from repository secrets, publishes SHA-256 checksums, and creates the GitHub Release.
+- **Automated releases** — pushing a `v*` tag builds debug + release APKs, signs them, publishes SHA-256 checksums, and creates the GitHub Release with notes extracted from `CHANGELOG.md`.
+- **Signed release builds.** Releases are signed so Android will actually install them: a public keystore (`signing/release.keystore`, alias `pebbledo`) is committed for consistent FOSS signing; a private key can take over anytime via `keystore.properties` or CI secrets (note: switching keys later requires uninstall/reinstall).
 - Optional release signing configuration via a gitignored `keystore.properties`.
 
 ---

@@ -8,9 +8,13 @@ plugins {
 
 val assetsDir = file("src/main/assets/www")
 
-// Optional release signing: if a keystore.properties file exists at the repo
-// root, a "release" signing config is created from it. Otherwise release APKs
-// are built unsigned (CI can inject the file from secrets).
+// Release signing precedence:
+// 1. A keystore.properties file at the repo root (private/local key, or CI
+//    injecting one from repository secrets) wins when present.
+// 2. Otherwise releases are signed with the PUBLIC keystore committed at
+//    signing/release.keystore — FOSS-style public signing so every published
+//    build shares one consistent, updatable signature.
+//    alias: pebbledo · password: pebbledo-public (public by design)
 val keystorePropsFile = rootProject.file("keystore.properties")
 val keystoreProps = Properties().apply {
     if (keystorePropsFile.exists()) keystorePropsFile.inputStream().use { load(it) }
@@ -103,9 +107,18 @@ android {
         if (keystorePropsFile.exists()) {
             create("release") {
                 storeFile = rootProject.file(keystoreProps.getProperty("storeFile"))
+                storeType = keystoreProps.getProperty("storeType") ?: "PKCS12"
                 storePassword = keystoreProps.getProperty("storePassword")
                 keyAlias = keystoreProps.getProperty("keyAlias")
                 keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        } else {
+            create("release") {
+                storeFile = rootProject.file("signing/release.keystore")
+                storeType = "PKCS12"
+                storePassword = "pebbledo-public"
+                keyAlias = "pebbledo"
+                keyPassword = "pebbledo-public"
             }
         }
     }
@@ -118,9 +131,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            if (keystorePropsFile.exists()) {
-                signingConfig = signingConfigs.getByName("release")
-            }
+            signingConfig = signingConfigs.getByName("release")
         }
         debug {
             isDebuggable = true

@@ -241,19 +241,39 @@ Defined as CSS custom properties on `:root`:
 The `downloadAssets` task is automatically triggered before `merge*` and `assemble*` tasks
 (requires network access on first run / after asset changes).
 
-### Release Signing (optional)
+### Release Signing
 
-If a `keystore.properties` file exists at the repo root:
+Release builds are always signed — unsigned APKs cannot be installed.
 
-```properties
-storeFile=path/to/release.keystore   # relative to repo root, or absolute
-storePassword=…
-keyAlias=…
-keyPassword=…
-```
+**Precedence:**
 
-…a `release` signing config is created and applied automatically. The file is
-gitignored. Without it, release APKs build unsigned.
+1. **Private key via `keystore.properties`** at the repo root (gitignored):
+
+   ```properties
+   storeFile=path/to/release.keystore   # relative to repo root, or absolute
+   storeType=PKCS12
+   storePassword=…
+   keyAlias=…
+   keyPassword=…
+   ```
+
+   In CI, `release.yml` generates this file from the
+   `ANDROID_KEYSTORE_B64` / `ANDROID_KEYSTORE_PASSWORD` /
+   `ANDROID_KEY_ALIAS` / `ANDROID_KEY_PASSWORD` secrets when they are set.
+
+2. **Committed public keystore** (`signing/release.keystore`) — used when no
+   private config exists. This is deliberate FOSS-style public signing (same
+   approach as NewPipe): the key is public knowledge, and its purpose is to
+   give every published build one consistent signature so updates install
+   cleanly. Anyone can build an equivalently signed APK; that trade-off is
+   accepted until the project moves to a private release key.
+
+> Migrating from the public key to a private one changes the signing key:
+> existing installs must be uninstalled before the privately-signed build can
+> replace them. Do this before building a real user base.
+
+The debug APK is signed automatically with the machine's auto-generated debug
+keystore and is meant for testing only.
 
 ### CI / Release Workflows (.github/workflows)
 

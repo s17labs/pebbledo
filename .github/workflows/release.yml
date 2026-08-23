@@ -5,8 +5,8 @@ name: Release
 #
 # Produces a GitHub Release containing:
 #   - PebbleDo-<version>-debug.apk
-#   - PebbleDo-<version>-release.apk   (signed if signing secrets are set,
-#                                       otherwise unsigned)
+#   - PebbleDo-<version>-release.apk   (signed with private secrets when set,
+#                                       else with the committed public keystore)
 #   - SHA-256 checksums file
 #
 # Optional signing secrets (repo Settings → Secrets → Actions):
@@ -72,7 +72,7 @@ jobs:
             } > keystore.properties
             echo "Signing configured from secrets."
           else
-            echo "No signing secrets set — building an unsigned release APK."
+            echo "No signing secrets set — signing with the committed public keystore."
           fi
 
       - name: Build APKs
