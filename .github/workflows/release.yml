@@ -82,9 +82,14 @@ jobs:
         env:
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
+          REL_APK=app/build/outputs/apk/release/app-release.apk
+          # Unsigned builds (no signing secrets) get "-unsigned" suffix
+          if [ ! -f "$REL_APK" ]; then
+            REL_APK=app/build/outputs/apk/release/app-release-unsigned.apk
+          fi
           mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk      "dist/PebbleDo-${VERSION}-debug.apk"
-          cp app/build/outputs/apk/release/app-release.apk  "dist/PebbleDo-${VERSION}-release.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk  "dist/PebbleDo-${VERSION}-debug.apk"
+          cp "$REL_APK"                                 "dist/PebbleDo-${VERSION}-release.apk"
           cd dist
           sha256sum *.apk > checksums.txt
           ls -la
