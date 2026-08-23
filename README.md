@@ -62,6 +62,7 @@
 | Icons | Font Awesome 7.0.0 |
 
 For detailed technical documentation, see [DOCUMENTATION.md](DOCUMENTATION.md).
+Release history is tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

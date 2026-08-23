@@ -65,6 +65,7 @@ pebbledo/
 ├── .github/workflows/
 │   ├── ci.yml                    # Debug APK build on push/PR
 │   └── release.yml               # Tag-triggered release builds & publishing
+├── CHANGELOG.md                  # Curated release notes (source for GitHub Releases)
 ├── app/src/main/
 │   ├── assets/www/
 │   │   ├── index.html           # Complete web app (~1200 lines)
@@ -259,9 +260,16 @@ gitignored. Without it, release APKs build unsigned.
 | Workflow | Trigger | What it does |
 |----------|---------|--------------|
 | `ci.yml` | push to `main`, PRs, manual | Validates the Gradle wrapper, builds a debug APK, uploads it as an artifact |
-| `release.yml` | tag push `v*`, manual | Builds debug + release APKs, signs if signing secrets are configured (`ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`), renames artifacts to `PebbleDo-<version>-*.apk`, generates SHA-256 checksums, publishes a GitHub Release with auto-generated notes |
+| `release.yml` | tag push `v*`, manual | Builds debug + release APKs, signs if signing secrets are configured (`ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`), renames artifacts to `PebbleDo-<version>-*.apk`, generates SHA-256 checksums (`checksums.txt` lets users verify downloads), and publishes a GitHub Release whose body is extracted from the matching `## [version]` section of `CHANGELOG.md` (GitHub's auto-generated commit notes are appended below it) |
 
-To cut a release: `git tag v1.1.0 && git push origin v1.1.0`.
+To cut a release: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+
+### Release Notes
+
+Release notes are curated in `CHANGELOG.md` (Keep-a-Changelog format). For each
+release, the workflow extracts the `## [X.Y.Z]` section matching the pushed tag
+and uses it as the release body — so write the notes there when preparing a
+version, and the GitHub Release fills itself in.
 
 ### Build Configuration
 
