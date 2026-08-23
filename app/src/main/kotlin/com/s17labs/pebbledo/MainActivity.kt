@@ -30,6 +30,8 @@ class MainActivity : AppCompatActivity() {
     // exit immediately instead of dispatching into a not-yet-ready page.
     internal var pageReady = false
 
+    private lateinit var backCallback: OnBackPressedCallback
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -113,7 +115,7 @@ class MainActivity : AppCompatActivity() {
      * requestExitApp() below.
      */
     private fun setupBackNavigation() {
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+        backCallback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (!pageReady) {
                     requestExitApp()
@@ -124,12 +126,13 @@ class MainActivity : AppCompatActivity() {
                     null
                 )
             }
-        })
+        }
+        onBackPressedDispatcher.addCallback(this, backCallback)
     }
 
     /** Exit the app — invoked from JS via Native.emit("exit"). */
     internal fun requestExitApp() {
-        isEnabled = false
+        backCallback.isEnabled = false
         onBackPressedDispatcher.onBackPressed()
     }
 
