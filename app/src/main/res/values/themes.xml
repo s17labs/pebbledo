@@ -6,8 +6,8 @@
         and lets your web app control all visual styling.
 
         Key attributes:
-        - windowBackground: black to avoid a flash before HTML loads
-          (MainActivity also sets the WebView background to match the theme)
+        - windowBackground: black fallback; MainActivity overrides it with
+          the persisted theme color before first draw (no theme flash)
         - statusBarColor / navigationBarColor: transparent for edge-to-edge
         - windowActionBar: false — no native action bar (your web app is the UI)
     -->

@@ -5,7 +5,8 @@
 **PebbleDo** is a minimal, distraction-free task manager for Android. No accounts, no syncing — just you and your tasks.
 
 <p>
-  <img src="https://img.shields.io/badge/Version-1.0.0-6060a0?style=flat-square" alt="Version">
+  <a href="https://github.com/s17labs/pebbledo/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/s17labs/pebbledo/ci.yml?branch=main&label=CI&style=flat-square" alt="CI"></a>
+  <a href="https://github.com/s17labs/pebbledo/releases/latest"><img src="https://img.shields.io/github/v/release/s17labs/pebbledo?style=flat-square" alt="Release"></a>
   <img src="https://img.shields.io/badge/License-MIT-6060a0?style=flat-square" alt="License">
   <img src="https://img.shields.io/badge/minSDK-26-6060a0?style=flat-square" alt="minSDK">
   <img src="https://img.shields.io/badge/targetSDK-35-6060a0?style=flat-square" alt="targetSDK">

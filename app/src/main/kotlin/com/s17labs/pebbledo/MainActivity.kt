@@ -1,6 +1,7 @@
 package com.s17labs.pebbledo
 
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -35,9 +36,14 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Restore the background saved from the web app's last theme so the
+        // launch frame matches the selected theme — no default-theme flash.
+        val startBg = loadSavedBackground()
+
         // Draw behind system bars for edge-to-edge display.
         // In your CSS, use env(safe-area-inset-*) to add padding.
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.setBackgroundDrawable(ColorDrawable(startBg))
 
         bridge = NativeBridge(this)
 
@@ -87,9 +93,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            // Match the default (slate) theme background to avoid a flash on load.
-            // The web app updates this at runtime via Native.emit("bg", {color}).
-            setBackgroundColor(Color.parseColor("#F0F2F5"))
+            // Match the restored theme background so the first drawn frame
+            // already has the right color. The web app keeps this in sync at
+            // runtime via Native.emit("bg", {color}).
+            setBackgroundColor(startBg)
 
             // Enable Chrome DevTools inspection in debug builds.
             // NEVER ship with this enabled in production.
@@ -136,11 +143,37 @@ class MainActivity : AppCompatActivity() {
         onBackPressedDispatcher.onBackPressed()
     }
 
-    /** Update the WebView background to match the current web theme. */
+    /**
+     * Update the WebView + window background to match the current web theme
+     * and persist it, so the next launch starts with the same color and no
+     * default-theme flash is visible.
+     */
     internal fun applyBackground(color: String) {
         try {
-            webView.setBackgroundColor(Color.parseColor(color))
+            val c = Color.parseColor(color)
+            webView.setBackgroundColor(c)
+            window.setBackgroundDrawable(ColorDrawable(c))
+            getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                .edit()
+                .putString(KEY_BACKGROUND, color)
+                .apply()
         } catch (_: IllegalArgumentException) {
         }
+    }
+
+    /** Background color saved by the web app on a previous run (or the default). */
+    private fun loadSavedBackground(): Int {
+        val saved = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_BACKGROUND, null)
+        return try {
+            Color.parseColor(saved ?: DEFAULT_BACKGROUND)
+        } catch (_: IllegalArgumentException) {
+            Color.parseColor(DEFAULT_BACKGROUND)
+        }
+    }
+
+    companion object {
+        private const val DEFAULT_BACKGROUND = "#F0F2F5" // slate theme bg
+        private const val PREFS_NAME = "webshell"
+        private const val KEY_BACKGROUND = "background"
     }
 }

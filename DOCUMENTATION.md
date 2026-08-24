@@ -117,7 +117,8 @@ Single Activity hosting the WebView.
 - Attaches `NativeBridge` as `window.Native` JavaScript interface
 - Handles external URL navigation (opens in system browser)
 - Dispatches hardware back button to JS (`backButton` event), exits on request
-- Syncs WebView background color with the active web theme (`bg` event)
+- Syncs WebView/window background with the active web theme (`bg` event) and
+  restores it on launch — no default-theme flash at startup
 - Implements edge-to-edge display (draws behind system bars)
 
 **Key WebView settings:**

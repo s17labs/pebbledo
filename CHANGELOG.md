@@ -4,6 +4,14 @@ All notable changes to PebbleDo are documented here.
 
 ---
 
+## [1.1.1] — 2026-08-23
+
+### Fixed
+
+- **Launch no longer flashes the default (light) theme.** The native shell now persists the background color pushed by the web app's theme system and applies it to the window and WebView before the first frame — so a cold start with, say, Dark or Ocean selected goes straight into that theme with no brief light flash.
+
+---
+
 ## [1.1.0] — 2026-08-23
 
 Shell synced with upstream WebShell 1.0.2, plus a round of functional fixes across the bridge, back-button handling, and exports.
