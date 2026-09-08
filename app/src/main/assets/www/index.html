@@ -53,7 +53,10 @@ button{font-family:inherit;cursor:pointer}
 body{
   background-color:var(--bg);color:var(--tx);font-family:var(--font);font-size:var(--fs);
   display:flex;flex-direction:column;height:100%;
-  padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);
+  padding-top:var(--sat, env(safe-area-inset-top, 0px));
+  padding-bottom:var(--sab, env(safe-area-inset-bottom, 0px));
+  padding-left:var(--sal, env(safe-area-inset-left, 0px));
+  padding-right:var(--sar, env(safe-area-inset-right, 0px));
   -webkit-tap-highlight-color:transparent;
   transition:background-color .4s ease, color .4s ease;
   overflow:hidden;user-select:none;-webkit-user-select:none;
@@ -797,6 +800,17 @@ function keepEditVisible(row){
   function scroll(){
     try{
       row.scrollIntoView({block:'nearest'});
+      /* Layout-resize case (native safe-area padding / visual-viewport shrink):
+         make sure the row is inside #tList's visible box with a small margin. */
+      var list=document.getElementById('tList');
+      if(list){
+        var lr=list.getBoundingClientRect();
+        var rr=row.getBoundingClientRect();
+        if(rr.bottom>lr.bottom-12){list.scrollTop+=(rr.bottom-(lr.bottom-12));}
+        else if(rr.top<lr.top+4){list.scrollTop-=(lr.top+4-rr.top);}
+      }
+      /* Overlay case (keyboard covers content without resizing layout):
+         lift the row above the keyboard using the visual viewport. */
       if(window.visualViewport){
         var vv=window.visualViewport;
         var kb=window.innerHeight-vv.height;
@@ -804,8 +818,8 @@ function keepEditVisible(row){
           var r=row.getBoundingClientRect();
           var visibleBottom=vv.height-12;
           if(r.bottom>visibleBottom){
-            var list=document.getElementById('tList');
-            if(list)list.scrollTop+=(r.bottom-visibleBottom);
+            var l2=document.getElementById('tList');
+            if(l2)l2.scrollTop+=(r.bottom-visibleBottom);
           }
         }
       }
