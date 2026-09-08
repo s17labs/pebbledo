@@ -790,19 +790,26 @@ function toast(msg){
   else console.log('[toast]',msg);
 }
 function checkMultiline(el){el.classList.toggle('ml',el.offsetHeight>56)}
-/* Keep the row being edited visible above the keyboard: scroll it into view
-   right away and again after the keyboard has finished opening (native IME
-   padding resizes the layout, but as a fallback also lift the row manually
-   when visualViewport shows the keyboard overlaying content). The top
-   bars are position:sticky so they stay pinned while the list scrolls. */
+/* Keep the row being edited visible above the keyboard. The last rows have
+   almost nothing below them, so #tList can't scroll far enough to lift them
+   above the keyboard — grow its bottom padding by the keyboard height first,
+   then scroll. The top bars are position:sticky so they stay pinned. */
+if(window.visualViewport&&!window.__baseVH)window.__baseVH=window.visualViewport.height;
+function kbHeight(){
+  if(!window.visualViewport||!window.__baseVH)return 0;
+  return window.__baseVH-window.visualViewport.height;
+}
 function keepEditVisible(row){
   if(!row||!row.scrollIntoView)return;
   function scroll(){
     try{
-      row.scrollIntoView({block:'nearest'});
-      /* Layout-resize case (native safe-area padding / visual-viewport shrink):
-         make sure the row is inside #tList's visible box with a small margin. */
+      /* Make room first: without padding below, the bottom rows physically
+         cannot scroll above the keyboard. */
+      var kb=kbHeight();
       var list=document.getElementById('tList');
+      if(list&&kb>80){list.style.paddingBottom=(kb+12)+'px';}
+      row.scrollIntoView({block:'nearest'});
+      /* Layout-resize case: make sure the row is inside #tList's visible box. */
       if(list){
         var lr=list.getBoundingClientRect();
         var rr=row.getBoundingClientRect();
@@ -811,16 +818,12 @@ function keepEditVisible(row){
       }
       /* Overlay case (keyboard covers content without resizing layout):
          lift the row above the keyboard using the visual viewport. */
-      if(window.visualViewport){
-        var vv=window.visualViewport;
-        var kb=window.innerHeight-vv.height;
-        if(kb>80){
-          var r=row.getBoundingClientRect();
-          var visibleBottom=vv.height-12;
-          if(r.bottom>visibleBottom){
-            var l2=document.getElementById('tList');
-            if(l2)l2.scrollTop+=(r.bottom-visibleBottom);
-          }
+      if(window.visualViewport&&kb>80){
+        var r=row.getBoundingClientRect();
+        var visibleBottom=window.visualViewport.height-12;
+        if(r.bottom>visibleBottom){
+          var l2=document.getElementById('tList');
+          if(l2)l2.scrollTop+=(r.bottom-visibleBottom);
         }
       }
     }catch(e){}
@@ -1035,14 +1038,24 @@ document.addEventListener('mousedown',e=>{const txt=e.target.closest('.txt');if(
 document.addEventListener('touchstart',e=>{const txt=e.target.closest('.txt');if(txt){const r=txt.closest('.row[data-id]');if(r)pendingId=r.dataset.id}},{passive:true,capture:true});
 if(window.visualViewport){
   let prevH=window.visualViewport.height;
+  if(!window.__baseVH)window.__baseVH=window.visualViewport.height;
   window.visualViewport.addEventListener('resize',()=>{
     const h=window.visualViewport.height;
-    if(h>prevH+80&&editId){const ta=document.querySelector('.inp');if(ta)ta.blur()}
-    else if(prevH-h>80&&editId){const row=document.querySelector('.row[data-id="'+editId+'"]');if(row)setTimeout(()=>keepEditVisible(row),120)}
+    if(h>window.__baseVH)window.__baseVH=h;
+    const kb=window.__baseVH-h;
+    const list=document.getElementById('tList');
+    if(kb>80){
+      if(list)list.style.paddingBottom=(kb+12)+'px';
+      if(editId){const row=document.querySelector('.row[data-id="'+editId+'"]');if(row)setTimeout(()=>keepEditVisible(row),120)}
+    }else{
+      if(list&&list.style.paddingBottom)list.style.paddingBottom='';
+      if(h>prevH+80&&editId){const ta=document.querySelector('.inp');if(ta)ta.blur()}
+    }
     prevH=h});
 }
 function commitEdit(id,doRender=true){
   if(editId!==id)return;editId=null;clearTimeout(saveTimer);saveTimer=null;
+  var tl=document.getElementById('tList');if(tl&&tl.style.paddingBottom)tl.style.paddingBottom='';
   const row=document.querySelector(`.row[data-id="${id}"]`),task=tasks.find(t_=>t_.id===id);
   if(row){
     row.classList.remove('editing');const ta=row.querySelector('.inp');
