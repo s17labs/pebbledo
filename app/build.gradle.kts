@@ -95,8 +95,8 @@ android {
     defaultConfig {
         // ── Change these to match your app ────────────
         applicationId = "com.s17labs.pebbledo"
-        versionCode = 3
-        versionName = "1.1.1"
+        versionCode = 4
+        versionName = "1.2.0"
         // ──────────────────────────────────────────────
 
         minSdk = 26
