@@ -62,13 +62,13 @@ textarea,input{user-select:text;-webkit-user-select:text;accent-color:var(--fill
 ::selection{background:var(--fill);color:#fff}
 ::-moz-selection{background:var(--fill);color:#fff}
 
-.nb{background-color:var(--nb);display:flex;align-items:center;justify-content:space-between;padding:0 2.5px;height:52px;flex-shrink:0;position:relative;transition:background-color .4s ease;z-index:10;}
+.nb{background-color:var(--nb);display:flex;align-items:center;justify-content:space-between;padding:0 2.5px;height:52px;flex-shrink:0;position:sticky;top:0;transition:background-color .4s ease;z-index:50;}
 .nb-title{position:absolute;left:50%;transform:translateX(-50%);font-size:15px;font-weight:600;color:var(--ttl);letter-spacing:.02em;pointer-events:none;white-space:nowrap;transition:color .4s ease;}
 .ns{display:flex;align-items:center;z-index:1}
 .nb-btn{background:none;border:none;width:48px;height:48px;border-radius:var(--r);color:var(--icon);font-size:18px;display:flex;align-items:center;justify-content:center;transition:color .15s,background-color .15s,border-radius .25s;-webkit-tap-highlight-color:transparent;}
 .nb-btn:active,.nb-btn.on{color:var(--icona);background-color:var(--sel)}
 
-.sel-nb{display:none;align-items:center;justify-content:space-between;background-color:var(--nb);padding:0 2.5px;height:52px;flex-shrink:0;transition:background-color .4s ease;z-index:10;position:relative;}
+.sel-nb{display:none;align-items:center;justify-content:space-between;background-color:var(--nb);padding:0 2.5px;height:52px;flex-shrink:0;transition:background-color .4s ease;z-index:50;position:sticky;top:0;}
 .sel-nb.active{display:flex}
 .sel-count{position:absolute;left:50%;transform:translateX(-50%);font-size:15px;font-weight:600;color:var(--ttl);letter-spacing:.02em;pointer-events:none;white-space:nowrap;transition:color .4s ease;}
 .sel-actions{display:flex;gap:2px}
@@ -79,7 +79,7 @@ textarea,input{user-select:text;-webkit-user-select:text;accent-color:var(--fill
 .tl{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 0 12px;position:relative;}
 .tl::-webkit-scrollbar{display:none}
 
-.row{display:flex;align-items:center;margin:1px 8px;border-radius:var(--r);padding:0 4px 0 0;position:relative;background-color:transparent;transition:background-color .2s,border-radius .25s;-webkit-tap-highlight-color:transparent;}
+.row{display:flex;align-items:center;margin:1px 8px;border-radius:var(--r);padding:0 4px 0 0;position:relative;scroll-margin:4px 0 12px;background-color:transparent;transition:background-color .2s,border-radius .25s;-webkit-tap-highlight-color:transparent;}
 .row.editing{background-color:var(--sel)}
 .row.selected{background-color:var(--sel)}
 .row.drag-src{opacity:0!important;pointer-events:none}
@@ -787,6 +787,14 @@ function toast(msg){
   else console.log('[toast]',msg);
 }
 function checkMultiline(el){el.classList.toggle('ml',el.offsetHeight>56)}
+/* Keep the row being edited visible above the keyboard: scroll it into view
+   right away and once more after the keyboard has finished opening. The top
+   bars are position:sticky so they stay pinned while the list scrolls. */
+function keepEditVisible(row){
+  if(!row||!row.scrollIntoView)return;
+  function scroll(){try{row.scrollIntoView({block:'nearest'})}catch(e){}}
+  requestAnimationFrame(scroll);setTimeout(scroll,350);
+}
 function updateHint(){
   const e1=document.querySelector('.e1');if(!e1)return;
   const empty=tasks.length===0;e1.classList.toggle('show-hint',empty);
@@ -980,7 +988,7 @@ function startEdit(id){
   row.classList.remove('ml');row.classList.add('editing');
   const ta=document.createElement('textarea');ta.className='inp';ta.value=task.text;ta.placeholder=t('taskPh');ta.rows=1;ta.style.fontFamily=fontStack(font);ta.style.fontSize=fontSize+'px';
   function grow(){ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';checkMultiline(row)}
-  txtEl.replaceWith(ta);ta.focus();grow();ta.setSelectionRange(ta.value.length,ta.value.length);
+  txtEl.replaceWith(ta);ta.focus();grow();ta.setSelectionRange(ta.value.length,ta.value.length);keepEditVisible(row);
   ta.addEventListener('input',()=>{task.text=ta.value;grow();scheduleSave()});
   ta.addEventListener('blur',()=>{requestAnimationFrame(()=>{if(pendingId&&pendingId!==id){row.classList.remove('editing');editId=null;return}commitEdit(id)})});
   ta.addEventListener('keydown',e=>{
@@ -995,7 +1003,11 @@ document.addEventListener('mousedown',e=>{const txt=e.target.closest('.txt');if(
 document.addEventListener('touchstart',e=>{const txt=e.target.closest('.txt');if(txt){const r=txt.closest('.row[data-id]');if(r)pendingId=r.dataset.id}},{passive:true,capture:true});
 if(window.visualViewport){
   let prevH=window.visualViewport.height;
-  window.visualViewport.addEventListener('resize',()=>{const h=window.visualViewport.height;if(h>prevH+80&&editId){const ta=document.querySelector('.inp');if(ta)ta.blur()}prevH=h});
+  window.visualViewport.addEventListener('resize',()=>{
+    const h=window.visualViewport.height;
+    if(h>prevH+80&&editId){const ta=document.querySelector('.inp');if(ta)ta.blur()}
+    else if(prevH-h>80&&editId){const row=document.querySelector('.row[data-id="'+editId+'"]');if(row)setTimeout(()=>keepEditVisible(row),120)}
+    prevH=h});
 }
 function commitEdit(id,doRender=true){
   if(editId!==id)return;editId=null;clearTimeout(saveTimer);saveTimer=null;
