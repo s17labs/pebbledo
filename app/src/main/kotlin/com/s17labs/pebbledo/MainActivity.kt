@@ -8,7 +8,9 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 
 /**
  * WebShell — MainActivity
@@ -109,7 +111,29 @@ class MainActivity : AppCompatActivity() {
         }
 
         setContentView(webView)
+        setupKeyboardResizing()
         setupBackNavigation()
+    }
+
+    /**
+     * Keyboard resizing.
+     *
+     * The app draws edge-to-edge (setDecorFitsSystemWindows(false)), so on
+     * modern Android the window is NOT resized for the on-screen keyboard and
+     * the WebView pans the whole page — top bar included — to reveal the
+     * focused input. Instead, pad the WebView above the IME: the layout
+     * viewport then truly shrinks, so the flex layout keeps the top bar
+     * pinned and only the task list gets shorter.
+     *
+     * On older Android where adjustResize still resizes the window, the IME
+     * inset is ~0 and this is a no-op — no double handling.
+     */
+    private fun setupKeyboardResizing() {
+        ViewCompat.setOnApplyWindowInsetsListener(webView) { v, insets ->
+            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
+            v.setPadding(0, 0, 0, ime.bottom)
+            insets
+        }
     }
 
     /**
