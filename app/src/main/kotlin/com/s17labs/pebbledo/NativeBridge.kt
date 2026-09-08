@@ -158,8 +158,7 @@ class NativeBridge(private val activity: MainActivity) {
      *
      * Handled events:
      *   - "exit" → exit the app (back button reached the root UI state)
-     *   - "bg"   → update the native chrome to match the web theme
-     *              (payload: {color: page bg, nav: top bar bg})
+     *   - "bg"   → update the WebView background to match the web theme
      */
     @JavascriptInterface
     fun emit(event: String, payload: String) {
@@ -170,8 +169,7 @@ class NativeBridge(private val activity: MainActivity) {
                 "bg" -> {
                     val color = data.optString("color")
                     if (color.isNotEmpty()) {
-                        val nav = data.optString("nav")
-                        activity.runOnUiThread { activity.applyBackground(color, nav) }
+                        activity.runOnUiThread { activity.applyBackground(color) }
                     }
                 }
             }
