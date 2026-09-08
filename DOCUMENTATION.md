@@ -283,7 +283,7 @@ keystore and is meant for testing only.
 | Workflow | Trigger | What it does |
 |----------|---------|--------------|
 | `ci.yml` | push to `main`, PRs, manual | Validates the Gradle wrapper, builds a debug APK, uploads it as an artifact |
-| `release.yml` | tag push `v*`, manual | Builds debug + release APKs, signs if signing secrets are configured (`ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`), renames artifacts to `PebbleDo-<version>-*.apk`, generates SHA-256 checksums (`checksums.txt` lets users verify downloads), and publishes a GitHub Release whose body is extracted from the matching `## [version]` section of `CHANGELOG.md` (GitHub's auto-generated commit notes are appended below it) |
+| `release.yml` | tag push `v*`, manual | Builds debug + release APKs, signs if signing secrets are configured (`ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`), renames artifacts to `PebbleDo-<version>-*.apk`, and publishes a GitHub Release whose body is extracted from the matching `## [version]` section of `CHANGELOG.md` (GitHub's auto-generated commit notes are appended below it) |
 
 To cut a release: `git tag vX.Y.Z && git push origin vX.Y.Z`.
 

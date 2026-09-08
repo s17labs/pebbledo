@@ -7,7 +7,6 @@ name: Release
 #   - PebbleDo-<version>-debug.apk
 #   - PebbleDo-<version>-release.apk   (signed with private secrets when set,
 #                                       else with the committed public keystore)
-#   - SHA-256 checksums file
 #
 # Optional signing secrets (repo Settings → Secrets → Actions):
 #   ANDROID_KEYSTORE_B64       base64-encoded .jks/.keystore file
@@ -90,9 +89,7 @@ jobs:
           mkdir -p dist
           cp app/build/outputs/apk/debug/app-debug.apk  "dist/PebbleDo-${VERSION}-debug.apk"
           cp "$REL_APK"                                 "dist/PebbleDo-${VERSION}-release.apk"
-          cd dist
-          sha256sum *.apk > checksums.txt
-          ls -la
+          ls -la dist
 
       - name: Extract release notes from CHANGELOG
         env:
@@ -122,4 +119,3 @@ jobs:
           make_latest: true
           files: |
             dist/PebbleDo-*.apk
-            dist/checksums.txt
