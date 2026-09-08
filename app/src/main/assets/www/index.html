@@ -29,7 +29,7 @@
   }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
+html,body{height:100%;overscroll-behavior:none}
 button{font-family:inherit;cursor:pointer}
 *:focus,*:focus-visible,*:focus-within{outline:none!important;-webkit-tap-highlight-color:transparent}
 
@@ -60,6 +60,10 @@ body{
   -webkit-tap-highlight-color:transparent;
   transition:background-color .4s ease, color .4s ease;
   overflow:hidden;user-select:none;-webkit-user-select:none;
+  /* The app never needs document-level scroll (lists/dialogs scroll
+     internally) — pin the root so drags can't pan the whole WebView,
+     e.g. while typing with the keyboard open. */
+  position:fixed;left:0;top:0;right:0;bottom:0;width:100%;
 }
 textarea,input{user-select:text;-webkit-user-select:text;accent-color:var(--fill);caret-color:var(--caret)}
 ::selection{background:var(--fill);color:#fff}
@@ -79,7 +83,7 @@ textarea,input{user-select:text;-webkit-user-select:text;accent-color:var(--fill
 .view{display:none;flex-direction:column;flex:1;overflow:hidden;position:relative}
 .view.active{display:flex}
 
-.tl{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 0 12px;position:relative;}
+.tl{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:4px 0 12px;position:relative;}
 .tl::-webkit-scrollbar{display:none}
 
 .row{display:flex;align-items:center;margin:1px 8px;border-radius:var(--r);padding:0 4px 0 0;position:relative;scroll-margin:4px 0 10px;background-color:transparent;transition:background-color .2s,border-radius .25s;-webkit-tap-highlight-color:transparent;}
@@ -132,7 +136,7 @@ body.selecting .dh{opacity:0;pointer-events:none}
 .ov{position:fixed;inset:0;background-color:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000;padding:24px;opacity:0;pointer-events:none;transition:opacity .22s;}
 .ov.open{opacity:1;pointer-events:all}
 .ov.open .dlg{transform:translateY(0) scale(1)}
-.dlg{background-color:var(--nb);border-radius:min(calc(var(--r) + 6px), 22px);padding:24px;width:100%;max-width:360px;position:relative;box-shadow:0 24px 64px rgba(0,0,0,.5);transform:translateY(16px) scale(.96);transition:transform .25s cubic-bezier(.22,1,.36,1),background-color .4s ease;max-height:90vh;overflow-y:auto;will-change:transform;}
+.dlg{background-color:var(--nb);border-radius:min(calc(var(--r) + 6px), 22px);padding:24px;width:100%;max-width:360px;position:relative;box-shadow:0 24px 64px rgba(0,0,0,.5);transform:translateY(16px) scale(.96);transition:transform .25s cubic-bezier(.22,1,.36,1),background-color .4s ease;max-height:90vh;overflow-y:auto;overscroll-behavior:contain;will-change:transform;}
 .dlg::-webkit-scrollbar{display:none}
 .dlg-x{
   position:absolute;top:20px;right:20px;
@@ -219,7 +223,7 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
 .export-done-btn:active{opacity:.7}
 
 /* ── Import ─────────────────────────────────────────────────── */
-#importText{width:100%;min-height:120px;max-height:220px;background-color:var(--sel);border:1.5px solid var(--div);border-radius:var(--r);color:var(--tx);font-size:13px;font-family:inherit;padding:10px 12px;resize:none;line-height:1.5;user-select:text;-webkit-user-select:text;}
+#importText{width:100%;min-height:120px;max-height:220px;background-color:var(--sel);border:1.5px solid var(--div);border-radius:var(--r);color:var(--tx);font-size:13px;font-family:inherit;padding:10px 12px;resize:none;line-height:1.5;overscroll-behavior:contain;user-select:text;-webkit-user-select:text;}
 #importText:focus{border-color:var(--fill)}
 #importText::placeholder{color:var(--muted)}
 .imp-btn-row{display:flex;gap:8px}
