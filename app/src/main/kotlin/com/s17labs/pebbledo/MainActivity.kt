@@ -116,22 +116,32 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Keyboard resizing.
+     * Keyboard + edge-to-edge resizing.
      *
      * The app draws edge-to-edge (setDecorFitsSystemWindows(false)), so on
      * modern Android the window is NOT resized for the on-screen keyboard and
-     * the WebView pans the whole page — top bar included — to reveal the
-     * focused input. Instead, pad the WebView above the IME: the layout
-     * viewport then truly shrinks, so the flex layout keeps the top bar
-     * pinned and only the task list gets shorter.
+     * the WebView would pan the whole page — top bar included — to reveal the
+     * focused input. Instead, pad the WebView for the system bars AND the IME:
+     * the layout viewport then truly shrinks, so the flex layout keeps the top
+     * bar pinned (below the status bar) and only the task list gets shorter.
+     *
+     * Top padding keeps .nb out from under the status bar. Bottom uses
+     * max(navBar, IME) so content sits above the nav bar when the keyboard is
+     * closed and above the keyboard when it is open.
      *
      * On older Android where adjustResize still resizes the window, the IME
-     * inset is ~0 and this is a no-op — no double handling.
+     * inset is ~0 and the systemBars part still applies — no double handling.
      */
     private fun setupKeyboardResizing() {
         ViewCompat.setOnApplyWindowInsetsListener(webView) { v, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
-            v.setPadding(0, 0, 0, ime.bottom)
+            val cutout = insets.getInsets(WindowInsetsCompat.Type.displayCutout())
+            val top = maxOf(bars.top, cutout.top)
+            val bottom = maxOf(bars.bottom, ime.bottom)
+            val left = maxOf(bars.left, cutout.left)
+            val right = maxOf(bars.right, cutout.right)
+            v.setPadding(left, top, right, bottom)
             insets
         }
     }
