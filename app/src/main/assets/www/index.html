@@ -693,13 +693,16 @@ function applyAll(){
   notifyBg();
 }
 
-/* Tell the native shell the current theme background so the WebView
-   background (and overscroll glow) matches — no flash on theme change. */
+/* Tell the native shell the current theme colors so the status strip matches
+   the top bar (--nb) and everything else matches the page bg (--bg) — no flash
+   on launch or theme change. */
 function notifyBg(){
   if(!(hasNB()&&NativeBridge.isNative()))return;
   try{
-    const c=getComputedStyle(document.getElementById('app')).getPropertyValue('--bg').trim();
-    if(c)NativeBridge.emit('bg',{color:c});
+    const cs=getComputedStyle(document.getElementById('app'));
+    const c=cs.getPropertyValue('--bg').trim();
+    const n=cs.getPropertyValue('--nb').trim();
+    if(c)NativeBridge.emit('bg',{color:c,nav:n||''});
   }catch(e){}
 }
 

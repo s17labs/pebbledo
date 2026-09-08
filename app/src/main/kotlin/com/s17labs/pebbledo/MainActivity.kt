@@ -6,7 +6,9 @@ import android.os.Bundle
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.widget.FrameLayout
+import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.Insets
@@ -30,9 +32,12 @@ class MainActivity : AppCompatActivity() {
     // Used when native code needs to push data/events back to JS.
     internal lateinit var webView: WebView
     private lateinit var bridge: NativeBridge
-    // Wrapper around the WebView. Static safe-area padding goes here — NOT on
-    // the WebView itself, whose web content ignores View padding.
-    private lateinit var rootContainer: FrameLayout
+    // Edge-to-edge chrome: thin strips above/below the WebView painting the
+    // safe areas. The top strip matches the web top bar (--nb) so the header
+    // reads as one continuous surface; the bottom strip matches the page bg.
+    private lateinit var rootContainer: LinearLayout
+    private lateinit var topStrip: View
+    private lateinit var bottomStrip: View
 
     // Set once the page has finished loading. Until then, back presses
     // exit immediately instead of dispatching into a not-yet-ready page.
@@ -40,10 +45,11 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var backCallback: OnBackPressedCallback
 
-    // Current theme background (int) + whether a web dialog is open. The
-    // native status/nav strips are painted from these so they dim together
-    // with the web dialog overlay (see setScrim).
+    // Current theme colors (ints) + whether a web dialog is open. The native
+    // strips are painted from these so the header stays continuous and everything
+    // dims together with the web dialog overlay (see setScrim).
     private var themeBg: Int = Color.parseColor("#F0F2F5")
+    private var themeNav: Int = Color.parseColor("#e4e7ec")
     private var scrimOn: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -53,6 +59,7 @@ class MainActivity : AppCompatActivity() {
         // launch frame matches the selected theme — no default-theme flash.
         val startBg = loadSavedBackground()
         themeBg = startBg
+        themeNav = loadSavedNav()
 
         // Draw behind system bars for edge-to-edge display.
         // Static safe areas are applied as container padding in setupEdgeToEdge(),
@@ -126,17 +133,25 @@ class MainActivity : AppCompatActivity() {
             loadUrl("file:///android_asset/www/index.html")
         }
 
-        rootContainer = FrameLayout(this).apply {
-            // Same theme color so the safe-area strips blend in.
+        rootContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            // Page bg behind everything; the strips cover the safe areas.
             setBackgroundColor(startBg)
-            addView(
-                webView,
-                FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT
-                )
-            )
         }
+        topStrip = View(this).apply { setBackgroundColor(themeNav) }
+        bottomStrip = View(this).apply { setBackgroundColor(startBg) }
+        rootContainer.addView(
+            topStrip,
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0)
+        )
+        rootContainer.addView(
+            webView,
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f)
+        )
+        rootContainer.addView(
+            bottomStrip,
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0)
+        )
 
         setContentView(rootContainer)
         setupEdgeToEdge()
@@ -147,12 +162,12 @@ class MainActivity : AppCompatActivity() {
      * Edge-to-edge safe areas + keyboard signal.
      *
      * The app draws behind the status/nav bars (setDecorFitsSystemWindows(false)).
-     * Static safe areas (systemBars/displayCutout) are applied as padding on the
-     * wrapper container — NOT on the WebView, whose web content ignores View
-     * padding — so they are correct from the very first frame: no flash of the
-     * top bar under the status bar while the page loads. The handled types are
-     * zeroed before passing insets on, so the WebView doesn't apply them a
-     * second time via CSS env(safe-area-inset-*).
+     * Static safe areas (systemBars/displayCutout) size the top/bottom strips
+     * and the container's side padding — plain Views, so they are correct from
+     * the very first frame: no flash of the top bar under the status bar while
+     * the page loads. The handled types are zeroed before passing insets on,
+     * so the WebView doesn't apply them a second time via
+     * CSS env(safe-area-inset-*).
      *
      * The keyboard is the exception: old WebViews with edge-to-edge give the page
      * NO web signal at all (no layout resize, no visual-viewport resize — the
@@ -169,10 +184,12 @@ class MainActivity : AppCompatActivity() {
             val cutout = insets.getInsets(WindowInsetsCompat.Type.displayCutout())
             v.setPadding(
                 maxOf(bars.left, cutout.left),
-                maxOf(bars.top, cutout.top),
+                0,
                 maxOf(bars.right, cutout.right),
-                maxOf(bars.bottom, cutout.bottom)
+                0
             )
+            setStripHeight(topStrip, maxOf(bars.top, cutout.top))
+            setStripHeight(bottomStrip, maxOf(bars.bottom, cutout.bottom))
             val density = resources.displayMetrics.density
             val imeDp = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom / density
             val imeStr = if (imeDp == imeDp.toInt().toFloat()) imeDp.toInt().toString() else "%.2f".format(imeDp)
@@ -190,6 +207,15 @@ class MainActivity : AppCompatActivity() {
                     Insets.NONE
                 )
                 .build()
+        }
+    }
+
+    /** Resize a safe-area strip; no-op when the height is unchanged. */
+    private fun setStripHeight(strip: View, px: Int) {
+        val lp = strip.layoutParams
+        if (lp.height != px) {
+            lp.height = px
+            strip.layoutParams = lp
         }
     }
 
@@ -225,26 +251,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Update the WebView + window background to match the current web theme
-     * and persist it, so the next launch starts with the same color and no
-     * default-theme flash is visible.
+     * Update the native chrome to match the current web theme and persist it,
+     * so the next launch starts with the same colors and no default-theme
+     * flash is visible. The top strip follows the web top bar color so the
+     * header reads as one continuous surface.
      */
-    internal fun applyBackground(color: String) {
+    internal fun applyBackground(color: String, nav: String) {
+        var changed = false
         try {
             themeBg = Color.parseColor(color)
             getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                 .edit()
                 .putString(KEY_BACKGROUND, color)
                 .apply()
-            renderBackground()
+            changed = true
         } catch (_: IllegalArgumentException) {
         }
+        if (nav.isNotEmpty()) {
+            try {
+                themeNav = Color.parseColor(nav)
+                getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+                    .edit()
+                    .putString(KEY_NAV, nav)
+                    .apply()
+                changed = true
+            } catch (_: IllegalArgumentException) {
+            }
+        }
+        if (changed) renderBackground()
     }
 
     /**
-     * Dim or undim the native status/nav strips while a web dialog is open.
+     * Dim or undim the native strips while a web dialog is open.
      * The web overlay (.ov) can't paint outside the WebView, so the shell dims
-     * its own background to the exact same value (see dimForScrim).
+     * its own strips to the exact same value (see dimForScrim).
      */
     internal fun setScrim(on: Boolean) {
         scrimOn = on
@@ -252,10 +292,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun renderBackground() {
-        val c = if (scrimOn) dimForScrim(themeBg) else themeBg
-        webView.setBackgroundColor(c)
-        rootContainer.setBackgroundColor(c)
-        window.setBackgroundDrawable(ColorDrawable(c))
+        webView.setBackgroundColor(themeBg)
+        window.setBackgroundDrawable(ColorDrawable(themeBg))
+        rootContainer.setBackgroundColor(if (scrimOn) dimForScrim(themeBg) else themeBg)
+        topStrip.setBackgroundColor(if (scrimOn) dimForScrim(themeNav) else themeNav)
+        bottomStrip.setBackgroundColor(if (scrimOn) dimForScrim(themeBg) else themeBg)
     }
 
     /** Match the web dialog overlay rgba(0,0,0,.6): out = src * (1 - .6). */
@@ -278,9 +319,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /** Top-bar color saved by the web app on a previous run (or the default). */
+    private fun loadSavedNav(): Int {
+        val saved = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).getString(KEY_NAV, null)
+        return try {
+            Color.parseColor(saved ?: DEFAULT_NAV)
+        } catch (_: IllegalArgumentException) {
+            Color.parseColor(DEFAULT_NAV)
+        }
+    }
+
     companion object {
         private const val DEFAULT_BACKGROUND = "#F0F2F5" // slate theme bg
+        private const val DEFAULT_NAV = "#e4e7ec" // slate theme top bar
         private const val PREFS_NAME = "webshell"
         private const val KEY_BACKGROUND = "background"
+        private const val KEY_NAV = "nav"
     }
 }
