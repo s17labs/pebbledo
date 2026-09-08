@@ -3,11 +3,11 @@ package com.s17labs.pebbledo
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
+import android.view.View
+import android.view.ViewGroup
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.view.View
-import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
@@ -15,6 +15,7 @@ import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import java.util.Locale
 
 /**
  * WebShell — MainActivity
@@ -190,8 +191,10 @@ class MainActivity : AppCompatActivity() {
             setStripHeight(bottomStrip, maxOf(bars.bottom, cutout.bottom))
             val density = resources.displayMetrics.density
             val imeDp = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom / density
-            val imeStr = if (imeDp == imeDp.toInt().toFloat()) imeDp.toInt().toString() else "%.2f".format(imeDp)
-            val prevStr = if (lastImeDp == lastImeDp.toInt().toFloat()) lastImeDp.toInt().toString() else "%.2f".format(lastImeDp)
+            // Locale.US: other locales render "%.2f" with a comma, which is a
+            // JS syntax error in the injected snippet below.
+            val imeStr = if (imeDp == imeDp.toInt().toFloat()) imeDp.toInt().toString() else String.format(Locale.US, "%.2f", imeDp)
+            val prevStr = if (lastImeDp == lastImeDp.toInt().toFloat()) lastImeDp.toInt().toString() else String.format(Locale.US, "%.2f", lastImeDp)
             val js = "window.__nativeKb=$imeStr;" +
                 "(function(){var kb=$imeStr,prev=$prevStr;" +
                 "if(kb>80){var r=document.querySelector('.row.editing');if(r&&window.keepEditVisible)keepEditVisible(r);}" +
