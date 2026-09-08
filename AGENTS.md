@@ -25,8 +25,8 @@ review of `index.html` logic, and let CI confirm the build.
 - CI (`.github/workflows/ci.yml`) runs on every push to `main` and on PRs: Gradle wrapper
   validation, JDK 17 + Android SDK setup, then `./gradlew assembleDebug --stacktrace`, uploading
   the debug APK as an artifact.
-- `.github/workflows/release.yml` runs on `v*` tags: builds debug + release APKs, generates
-  SHA-256 checksums, extracts the matching section from `CHANGELOG.md` into the release notes,
+- `.github/workflows/release.yml` runs on `v*` tags: builds debug + release APKs,
+  extracts the matching section from `CHANGELOG.md` into the release notes,
   and publishes a GitHub Release.
 - Local sandboxes often lack the Android SDK/JDK or other toolchains — if builds can't run locally,
   rely on careful code review and let CI verify. Never skip updating tests when changing shared interfaces.
@@ -149,7 +149,7 @@ PR rules:
    and add a matching `## [X.Y.Z] - date` section to `CHANGELOG.md`.
 2. Tag on `main`: `git tag vX.Y.Z && git push origin vX.Y.Z`.
 3. The `release.yml` workflow builds debug + release APKs, signs releases with private secrets when
-   configured (otherwise the committed public keystore), writes SHA-256 checksums, extracts the
+   configured (otherwise the committed public keystore), extracts the
    matching `CHANGELOG.md` section as release notes, and creates the GitHub Release
    (`generate_release_notes: true`).
 
