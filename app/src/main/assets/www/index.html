@@ -809,26 +809,24 @@ function layoutResized(){
   return b>0&&cur>0&&(b-cur>80);
 }
 function keepEditVisible(row){
-  if(!row||!row.scrollIntoView)return;
+  if(!row)return;
   function scroll(){
     try{
       var kb=kbHeight();
       var list=document.getElementById('tList');
+      if(!list)return;
       /* Overlay case only: when the window itself resized (adjustResize),
          the list already ends above the keyboard — padding would just add a
-         gap. When the keyboard overlays, padding creates the scroll room. */
-      if(list){
-        if(kb>80&&!layoutResized()){list.style.paddingBottom=(kb+10)+'px';}
-        else if(!kb||kb<=80){/* keep existing padding until close handling */}
-      }
-      row.scrollIntoView({block:'nearest'});
+         gap. When the keyboard overlays, padding creates the scroll room.
+         Only #tList is scrolled on purpose: scrollIntoView() would also pan
+         the root viewport, stacking with this scroll and pushing the top bar
+         off-screen with an oversized gap. */
+      if(kb>80&&!layoutResized()){list.style.paddingBottom=(kb+10)+'px';}
       /* Make sure the row is inside #tList's visible box. */
-      if(list){
-        var lr=list.getBoundingClientRect();
-        var rr=row.getBoundingClientRect();
-        if(rr.bottom>lr.bottom-10){list.scrollTop+=(rr.bottom-(lr.bottom-10));}
-        else if(rr.top<lr.top+4){list.scrollTop-=(lr.top+4-rr.top);}
-      }
+      var lr=list.getBoundingClientRect();
+      var rr=row.getBoundingClientRect();
+      if(rr.bottom>lr.bottom-10){list.scrollTop+=(rr.bottom-(lr.bottom-10));}
+      else if(rr.top<lr.top+4){list.scrollTop-=(lr.top+4-rr.top);}
       /* Overlay lift: visible height is layout minus keyboard (or the shrunk
          visual viewport when it fires). */
       if(kb>80&&!layoutResized()){
@@ -836,10 +834,7 @@ function keepEditVisible(row){
         var vvH=window.visualViewport?window.visualViewport.height:layoutH;
         var visibleBottom=Math.min(vvH,layoutH-kb)-10;
         var r=row.getBoundingClientRect();
-        if(r.bottom>visibleBottom){
-          var l2=document.getElementById('tList');
-          if(l2)l2.scrollTop+=(r.bottom-visibleBottom);
-        }
+        if(r.bottom>visibleBottom){list.scrollTop+=(r.bottom-visibleBottom);}
       }
     }catch(e){}
   }
@@ -1032,13 +1027,13 @@ function startEdit(id){
   if(isSelecting)return;pendingId=id;if(editId&&editId!==id)commitEdit(editId);editId=id;pendingId=null;
   const row=document.querySelector(`.row[data-id="${id}"]`);if(!row)return;
   const task=tasks.find(t_=>t_.id===id);if(!task)return;
-  const existing=row.querySelector('.inp');if(existing){row.classList.add('editing');existing.focus();return}
+  const existing=row.querySelector('.inp');if(existing){row.classList.add('editing');try{existing.focus({preventScroll:true})}catch(e){existing.focus()}keepEditVisible(row);return}
   const txtEl=row.querySelector('.txt');if(!txtEl)return;
   document.querySelectorAll('.row.editing').forEach(r=>{if(r!==row)r.classList.remove('editing')});
   row.classList.remove('ml');row.classList.add('editing');
   const ta=document.createElement('textarea');ta.className='inp';ta.value=task.text;ta.placeholder=t('taskPh');ta.rows=1;ta.style.fontFamily=fontStack(font);ta.style.fontSize=fontSize+'px';
   function grow(){ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';checkMultiline(row)}
-  txtEl.replaceWith(ta);ta.focus();grow();ta.setSelectionRange(ta.value.length,ta.value.length);keepEditVisible(row);
+  txtEl.replaceWith(ta);try{ta.focus({preventScroll:true})}catch(e){ta.focus()}grow();ta.setSelectionRange(ta.value.length,ta.value.length);keepEditVisible(row);
   ta.addEventListener('input',()=>{task.text=ta.value;grow();scheduleSave()});
   ta.addEventListener('blur',()=>{requestAnimationFrame(()=>{if(pendingId&&pendingId!==id){row.classList.remove('editing');editId=null;return}commitEdit(id)})});
   ta.addEventListener('keydown',e=>{
@@ -1235,14 +1230,28 @@ document.getElementById('expDone').addEventListener('click',()=>closeDlg('ovExpo
    DIALOGS
 ════════════════════════════════════════════ */
 const dlgStack=[];
+/* Dim the native status/nav strips together with the dialog overlay (.ov is
+   position:fixed inside the WebView, so it can't paint over the strips — the
+   native shell dims its own background to match rgba(0,0,0,.6)). The delayed
+   off-check covers chained dialogs (settings → export/about) reopening ~180ms
+   after the previous one closes. */
+function syncScrim(on){
+  if(!(hasNB()&&NativeBridge.isNative()))return;
+  try{
+    if(on){NativeBridge.emit('scrim',{on:true});}
+    else{setTimeout(()=>{try{if(!document.querySelector('.ov.open'))NativeBridge.emit('scrim',{on:false})}catch(e){}},250);}
+  }catch(e){}
+}
 function openDlg(id,dismissable=true){
   const el=document.getElementById(id);
   el.classList.add('open');
   if(dismissable&&!dlgStack.includes(id))dlgStack.push(id);
+  syncScrim(true);
 }
 function closeDlg(id){
   document.getElementById(id).classList.remove('open');
   const i=dlgStack.indexOf(id);if(i>-1)dlgStack.splice(i,1);
+  syncScrim(false);
 }
 
 /**
