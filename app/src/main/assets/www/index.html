@@ -728,7 +728,7 @@ function t(key,...args){
 let tasks=[],archived=[];
 let editId=null,pendingId=null,saveTimer=null;
 let currentView='main';
-let isSelecting=false,selectedIds=new Set(),longPressTimer=null,selectModeEnterTime=0;
+let isSelecting=false,selectedIds=new Set(),longPressTimer=null,selectModeEnterTime=0,suppressSelectClick=false;
 let exportScope='todos',exportFmt='text',importDest='auto';
 let font='sys',theme='slate',fontSize=16,radius=10,haptics=true;
 let lang=window._preloadLang||'en';
@@ -984,18 +984,22 @@ function makeRow(task){
   const row=document.createElement('div');
   row.className='row';row.dataset.id=task.id;
   row.innerHTML=`<div class="chk"><div class="circle"><i class="fa-solid fa-check"></i></div></div><span class="txt">${esc(task.text)}</span><div class="dh"><i class="fa-solid fa-grip-lines"></i></div>`;
-  row.addEventListener('click',e=>{if(Date.now()-selectModeEnterTime<300)return;if(isSelecting)toggleSelect(task.id)});
+  row.addEventListener('click',e=>{if(suppressSelectClick){suppressSelectClick=false;return}if(Date.now()-selectModeEnterTime<300)return;if(isSelecting)toggleSelect(task.id)});
   row.querySelector('.chk').addEventListener('click',e=>{if(Date.now()-selectModeEnterTime<300)return;if(!isSelecting){e.stopPropagation();doArchive(task.id,row)}});
   row.querySelector('.txt').addEventListener('click',e=>{if(Date.now()-selectModeEnterTime<300)return;if(!isSelecting){e.stopPropagation();startEdit(task.id)}});
   row.addEventListener('touchstart',e=>{
-    if(isSelecting||e.target.closest('.dh')||row.classList.contains('editing'))return;
+    if(isSelecting){suppressSelectClick=false;return}
+    if(e.target.closest('.dh')||row.classList.contains('editing'))return;
     longPressTimer=setTimeout(()=>{vibrate([30,20,40]);selectModeEnterTime=Date.now();enterSelectMode(task.id)},500);
   },{passive:true});
   row.addEventListener('touchend',()=>clearTimeout(longPressTimer));
+  row.addEventListener('touchcancel',()=>clearTimeout(longPressTimer));
   row.addEventListener('touchmove',()=>clearTimeout(longPressTimer));
   // Mouse / desktop long-press: press-and-hold left button to multi-select.
   row.addEventListener('mousedown',e=>{
-    if(e.button!==0||isSelecting||e.target.closest('.dh')||row.classList.contains('editing'))return;
+    if(e.button!==0)return;
+    if(isSelecting){suppressSelectClick=false;return}
+    if(e.target.closest('.dh')||row.classList.contains('editing'))return;
     clearTimeout(longPressTimer);
     longPressTimer=setTimeout(()=>{vibrate([30,20,40]);selectModeEnterTime=Date.now();enterSelectMode(task.id)},500);
   });
@@ -1023,13 +1027,16 @@ function makeEmpty(cls,anim){
 function enterSelectMode(firstId){
   if(editId)commitEdit(editId);
   isSelecting=true;selectedIds=new Set([firstId]);
+  // Swallow the release-click of the long-press gesture itself — otherwise
+  // it instantly toggles the just-selected row back off.
+  suppressSelectClick=true;
   document.body.classList.add('selecting');
   document.getElementById('mainNb').style.display='none';
   document.getElementById('selNb').classList.add('active');
   updateSelUI();render(false);
 }
 function exitSelectMode(){
-  isSelecting=false;selectedIds.clear();
+  isSelecting=false;selectedIds.clear();suppressSelectClick=false;
   document.body.classList.remove('selecting');
   document.getElementById('mainNb').style.display='';
   document.getElementById('selNb').classList.remove('active');
