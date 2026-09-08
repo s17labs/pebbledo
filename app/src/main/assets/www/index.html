@@ -497,7 +497,7 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
       <p class="ab-name">PebbleDo</p>
       <p class="ab-ver" id="abVer">Version 1.0.0</p>
       <p class="ab-desc" id="aboutDesc">A quiet little to-do list built for focus. Made by s17 Labs &#x2014; a tiny dev org building clean, minimal tools for the modern web.</p>
-      <a class="ab-gh" id="ghLink" href="https://github.com/s17labs" target="_blank"><i class="fa-brands fa-github"></i>github.com/s17labs</a>
+      <a class="ab-gh" id="ghLink" href="https://github.com/s17labs/pebbledo" target="_blank"><i class="fa-brands fa-github"></i>github.com/s17labs/pebbledo</a>
     </div>
   </div>
 </div>
@@ -1236,7 +1236,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&isSelecting){exitSelectMode();return}
   if(e.key==='ArrowDown'){e.preventDefault();nav(1)}if(e.key==='ArrowUp'){e.preventDefault();nav(-1)}
 });
-document.getElementById('ghLink').addEventListener('click',e=>{if(typeof NativeBridge!=='undefined'&&NativeBridge.isNative()){e.preventDefault();NativeBridge.openUrl('https://github.com/s17labs')}});
+document.getElementById('ghLink').addEventListener('click',e=>{if(typeof NativeBridge!=='undefined'&&NativeBridge.isNative()){e.preventDefault();NativeBridge.openUrl('https://github.com/s17labs/pebbledo')}});
 
 /* ════════════════════════════════════════════
    BOOT
