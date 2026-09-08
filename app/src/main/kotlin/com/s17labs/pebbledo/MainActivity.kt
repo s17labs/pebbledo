@@ -165,6 +165,7 @@ class MainActivity : AppCompatActivity() {
                 "document.documentElement.style.setProperty('--sab','${toDpStr(maxOf(bars.bottom, cutout.bottom))}px');" +
                 "document.documentElement.style.setProperty('--sal','${toDpStr(maxOf(bars.left, cutout.left))}px');" +
                 "document.documentElement.style.setProperty('--sar','${toDpStr(maxOf(bars.right, cutout.right))}px');" +
+                "if(document.body)document.body.classList.add('ready');" +
                 "window.__nativeKb=$imeStr;" +
                 "(function(){var kb=$imeStr,prev=$prevStr;" +
                 "if(kb>80){var r=document.querySelector('.row.editing');if(r&&window.keepEditVisible)keepEditVisible(r);}" +

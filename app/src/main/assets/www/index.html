@@ -62,9 +62,12 @@ body{
   padding-left:var(--sal, env(safe-area-inset-left, 0px));
   padding-right:var(--sar, env(safe-area-inset-right, 0px));
   -webkit-tap-highlight-color:transparent;
-  transition:background-color .4s ease, color .4s ease;
+  transition:background-color .4s ease, color .4s ease, opacity .18s ease;
   overflow:hidden;user-select:none;-webkit-user-select:none;
+  /* Launch gate (see BOOT): hidden until safe-area vars arrive or timeout. */
+  opacity:0;
 }
+body.ready{opacity:1}
 textarea,input{user-select:text;-webkit-user-select:text;accent-color:var(--fill);caret-color:var(--caret)}
 ::selection{background:var(--fill);color:#fff}
 ::-moz-selection{background:var(--fill);color:#fff}
@@ -1325,7 +1328,16 @@ document.getElementById('ghLink').addEventListener('click',e=>{if(typeof NativeB
 
 /* ════════════════════════════════════════════
    BOOT
-════════════════════════════════════════════ */
+   ════════════════════════════════════════════ */
+/* Launch gate: in the native shell the page stays hidden until the first
+   safe-area vars arrive (the native snippet adds body.ready atomically with
+   them), so the top bar never flashes under the status bar. The timeout is a
+   safety net so a missed signal can't leave the app invisible; desktop
+   browsers skip the gate entirely. */
+(function(){
+  if(!hasNB()||!NativeBridge.isNative()){document.body.classList.add('ready');return;}
+  setTimeout(()=>{document.body.classList.add('ready')},800);
+})();
 load();applyAll();applyLang();render(true);
 
 // Show the real app version from the native package when available.
