@@ -82,7 +82,7 @@ textarea,input{user-select:text;-webkit-user-select:text;accent-color:var(--fill
 .tl{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 0 12px;position:relative;}
 .tl::-webkit-scrollbar{display:none}
 
-.row{display:flex;align-items:center;margin:1px 8px;border-radius:var(--r);padding:0 4px 0 0;position:relative;scroll-margin:4px 0 12px;background-color:transparent;transition:background-color .2s,border-radius .25s;-webkit-tap-highlight-color:transparent;}
+.row{display:flex;align-items:center;margin:1px 8px;border-radius:var(--r);padding:0 4px 0 0;position:relative;scroll-margin:4px 0 10px;background-color:transparent;transition:background-color .2s,border-radius .25s;-webkit-tap-highlight-color:transparent;}
 .row.editing{background-color:var(--sel)}
 .row.selected{background-color:var(--sel)}
 .row.drag-src{opacity:0!important;pointer-events:none}
@@ -818,7 +818,7 @@ function keepEditVisible(row){
          the list already ends above the keyboard — padding would just add a
          gap. When the keyboard overlays, padding creates the scroll room. */
       if(list){
-        if(kb>80&&!layoutResized()){list.style.paddingBottom=(kb+12)+'px';}
+        if(kb>80&&!layoutResized()){list.style.paddingBottom=(kb+10)+'px';}
         else if(!kb||kb<=80){/* keep existing padding until close handling */}
       }
       row.scrollIntoView({block:'nearest'});
@@ -826,7 +826,7 @@ function keepEditVisible(row){
       if(list){
         var lr=list.getBoundingClientRect();
         var rr=row.getBoundingClientRect();
-        if(rr.bottom>lr.bottom-12){list.scrollTop+=(rr.bottom-(lr.bottom-12));}
+        if(rr.bottom>lr.bottom-10){list.scrollTop+=(rr.bottom-(lr.bottom-10));}
         else if(rr.top<lr.top+4){list.scrollTop-=(lr.top+4-rr.top);}
       }
       /* Overlay lift: visible height is layout minus keyboard (or the shrunk
@@ -834,7 +834,7 @@ function keepEditVisible(row){
       if(kb>80&&!layoutResized()){
         var layoutH=window.innerHeight||document.documentElement.clientHeight||0;
         var vvH=window.visualViewport?window.visualViewport.height:layoutH;
-        var visibleBottom=Math.min(vvH,layoutH-kb)-12;
+        var visibleBottom=Math.min(vvH,layoutH-kb)-10;
         var r=row.getBoundingClientRect();
         if(r.bottom>visibleBottom){
           var l2=document.getElementById('tList');
@@ -1067,7 +1067,7 @@ if(window.visualViewport){
     const kb=Math.max(window.__baseVH-h,window.__nativeKb||0);
     const list=document.getElementById('tList');
     if(kb>80&&!layoutResized()){
-      if(list)list.style.paddingBottom=(kb+12)+'px';
+      if(list)list.style.paddingBottom=(kb+10)+'px';
       if(editId){const row=document.querySelector('.row[data-id="'+editId+'"]');if(row)setTimeout(()=>keepEditVisible(row),120)}
     }else if(kb<=80){
       if(list&&list.style.paddingBottom)list.style.paddingBottom='';
