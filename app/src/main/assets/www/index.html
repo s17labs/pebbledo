@@ -987,14 +987,23 @@ function makeRow(task){
   row.addEventListener('click',e=>{if(suppressSelectClick){suppressSelectClick=false;return}if(Date.now()-selectModeEnterTime<300)return;if(isSelecting)toggleSelect(task.id)});
   row.querySelector('.chk').addEventListener('click',e=>{if(Date.now()-selectModeEnterTime<300)return;if(!isSelecting){e.stopPropagation();doArchive(task.id,row)}});
   row.querySelector('.txt').addEventListener('click',e=>{if(Date.now()-selectModeEnterTime<300)return;if(!isSelecting){e.stopPropagation();startEdit(task.id)}});
+  // Touch slop: some screens emit tiny touchmove jitter with a perfectly
+  // still finger — only treat it as a scroll/drag past ~12px.
+  let lpX=0,lpY=0;
   row.addEventListener('touchstart',e=>{
     if(isSelecting){suppressSelectClick=false;return}
     if(e.target.closest('.dh')||row.classList.contains('editing'))return;
+    const th=e.touches&&e.touches[0];
+    lpX=th?th.clientX:0;lpY=th?th.clientY:0;
     longPressTimer=setTimeout(()=>{vibrate([30,20,40]);selectModeEnterTime=Date.now();enterSelectMode(task.id)},500);
   },{passive:true});
   row.addEventListener('touchend',()=>{lastTouchEnd=Date.now();clearTimeout(longPressTimer)});
   row.addEventListener('touchcancel',()=>clearTimeout(longPressTimer));
-  row.addEventListener('touchmove',()=>clearTimeout(longPressTimer));
+  row.addEventListener('touchmove',e=>{
+    const th=e.touches&&e.touches[0];
+    if(th&&Math.hypot(th.clientX-lpX,th.clientY-lpY)<=12)return;
+    clearTimeout(longPressTimer);
+  });
   // Mouse / desktop long-press: press-and-hold left button to multi-select.
   row.addEventListener('mousedown',e=>{
     if(e.button!==0)return;
