@@ -4,6 +4,21 @@ All notable changes to PebbleDo are documented here.
 
 ---
 
+## [1.2.0] — 2026-09-08
+
+### Added
+
+- **Import your todos back.** Settings → Import Todos accepts everything export produces — plain-text lists and Markdown checklists, todos / archive / everything scopes, in English or Slovak — with Auto-detect, Todos-only, and Archive-only destinations, plus a Paste button that reads the system clipboard.
+- **Copy selected todos.** Long-press a todo to multi-select (press-and-hold works with a mouse on desktop too); the new Copy button in the selection bar copies the selection as an import-compatible list.
+
+### Fixed
+
+- **Long-press to select works on touch screens now.** Fixed the release-click instantly deselecting the row, ghost mouse events disarming selection, touch jitter cancelling the hold, and the system long-press menu burying the selection UI.
+- **Import dialog behaves with the keyboard open.** The sheet pins and compacts above the keyboard so the Import button stays visible, and drags can no longer pan the whole app while typing.
+- Top bar stays pinned edge-to-edge with the edited row kept above the keyboard; a status-bar spacer and launch gate remove theme flashes on startup.
+
+---
+
 ## [1.1.1] — 2026-08-23
 
 ### Fixed
