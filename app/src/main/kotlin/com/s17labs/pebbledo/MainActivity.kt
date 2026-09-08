@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.Insets
@@ -29,6 +30,9 @@ class MainActivity : AppCompatActivity() {
     // Used when native code needs to push data/events back to JS.
     internal lateinit var webView: WebView
     private lateinit var bridge: NativeBridge
+    // Wrapper around the WebView. Static safe-area padding goes here — NOT on
+    // the WebView itself, whose web content ignores View padding.
+    private lateinit var rootContainer: FrameLayout
 
     // Set once the page has finished loading. Until then, back presses
     // exit immediately instead of dispatching into a not-yet-ready page.
@@ -44,7 +48,7 @@ class MainActivity : AppCompatActivity() {
         val startBg = loadSavedBackground()
 
         // Draw behind system bars for edge-to-edge display.
-        // Static safe areas are applied as WebView padding in setupEdgeToEdge(),
+        // Static safe areas are applied as container padding in setupEdgeToEdge(),
         // so the web content needs no env(safe-area-inset-*) handling.
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.setBackgroundDrawable(ColorDrawable(startBg))
@@ -94,9 +98,9 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onPageFinished(view: WebView?, url: String?) {
                     pageReady = true
-                    // Insets aren't dispatched to the WebView on initial load —
-                    // request them so the CSS safe-area vars get set below.
-                    view?.requestApplyInsets()
+                    // Insets aren't dispatched on initial load — request them so
+                    // the container gets its safe-area padding below.
+                    rootContainer.requestApplyInsets()
                 }
             }
 
@@ -115,7 +119,19 @@ class MainActivity : AppCompatActivity() {
             loadUrl("file:///android_asset/www/index.html")
         }
 
-        setContentView(webView)
+        rootContainer = FrameLayout(this).apply {
+            // Same theme color so the safe-area strips blend in.
+            setBackgroundColor(startBg)
+            addView(
+                webView,
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            )
+        }
+
+        setContentView(rootContainer)
         setupEdgeToEdge()
         setupBackNavigation()
     }
@@ -124,10 +140,11 @@ class MainActivity : AppCompatActivity() {
      * Edge-to-edge safe areas + keyboard signal.
      *
      * The app draws behind the status/nav bars (setDecorFitsSystemWindows(false)).
-     * Static safe areas (systemBars/displayCutout) are applied as native View
-     * padding here, so they are correct from the very first frame — no flash of
-     * the top bar under the status bar while the page loads. The handled types
-     * are zeroed before passing insets on, so the WebView doesn't apply them a
+     * Static safe areas (systemBars/displayCutout) are applied as padding on the
+     * wrapper container — NOT on the WebView, whose web content ignores View
+     * padding — so they are correct from the very first frame: no flash of the
+     * top bar under the status bar while the page loads. The handled types are
+     * zeroed before passing insets on, so the WebView doesn't apply them a
      * second time via CSS env(safe-area-inset-*).
      *
      * The keyboard is the exception: old WebViews with edge-to-edge give the page
@@ -140,7 +157,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun setupEdgeToEdge() {
         var lastImeDp = 0f
-        ViewCompat.setOnApplyWindowInsetsListener(webView) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(rootContainer) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val cutout = insets.getInsets(WindowInsetsCompat.Type.displayCutout())
             v.setPadding(
@@ -209,6 +226,7 @@ class MainActivity : AppCompatActivity() {
         try {
             val c = Color.parseColor(color)
             webView.setBackgroundColor(c)
+            rootContainer.setBackgroundColor(c)
             window.setBackgroundDrawable(ColorDrawable(c))
             getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                 .edit()
