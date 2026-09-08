@@ -92,6 +92,9 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onPageFinished(view: WebView?, url: String?) {
                     pageReady = true
+                    // Insets aren't dispatched to the WebView on initial load —
+                    // request them so the CSS safe-area vars get set below.
+                    view?.requestApplyInsets()
                 }
             }
 
@@ -111,37 +114,46 @@ class MainActivity : AppCompatActivity() {
         }
 
         setContentView(webView)
-        setupKeyboardResizing()
+        setupEdgeToEdge()
         setupBackNavigation()
     }
 
     /**
-     * Keyboard + edge-to-edge resizing.
+     * Edge-to-edge safe areas.
      *
-     * The app draws edge-to-edge (setDecorFitsSystemWindows(false)), so on
-     * modern Android the window is NOT resized for the on-screen keyboard and
-     * the WebView would pan the whole page — top bar included — to reveal the
-     * focused input. Instead, pad the WebView for the system bars AND the IME:
-     * the layout viewport then truly shrinks, so the flex layout keeps the top
-     * bar pinned (below the status bar) and only the task list gets shorter.
+     * The app draws behind the status/nav bars (setDecorFitsSystemWindows(false)).
+     * Modern WebView forwards systemBars/displayCutout via CSS env(safe-area-inset-*)
+     * (M136+) and resizes the visual viewport for the keyboard (M139+) on its own —
+     * so we must NOT pad the WebView natively (that fights the built-in behavior
+     * and causes double/ghost padding).
      *
-     * Top padding keeps .nb out from under the status bar. Bottom uses
-     * max(navBar, IME) so content sits above the nav bar when the keyboard is
-     * closed and above the keyboard when it is open.
+     * Older WebViews report env() as 0, so as a fallback inject the same values
+     * as --sat/--sab/--sal/--sar CSS vars. The web CSS uses
+     * var(--sat, env(safe-area-inset-top, 0px)) etc., so it works on all versions.
      *
-     * On older Android where adjustResize still resizes the window, the IME
-     * inset is ~0 and the systemBars part still applies — no double handling.
+     * IME is deliberately excluded here: the keyboard is handled by WebView's
+     * visual-viewport resizing + the page's keepEditVisible() scrolling.
+     * Insets are returned unmodified so the WebView still receives them.
      */
-    private fun setupKeyboardResizing() {
-        ViewCompat.setOnApplyWindowInsetsListener(webView) { v, insets ->
+    private fun setupEdgeToEdge() {
+        ViewCompat.setOnApplyWindowInsetsListener(webView) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            val ime = insets.getInsets(WindowInsetsCompat.Type.ime())
             val cutout = insets.getInsets(WindowInsetsCompat.Type.displayCutout())
             val top = maxOf(bars.top, cutout.top)
-            val bottom = maxOf(bars.bottom, ime.bottom)
+            val bottom = maxOf(bars.bottom, cutout.bottom)
             val left = maxOf(bars.left, cutout.left)
             val right = maxOf(bars.right, cutout.right)
-            v.setPadding(left, top, right, bottom)
+            val density = resources.displayMetrics.density
+            fun toDp(px: Int): String {
+                // CSS px == dp; trim trailing zeros for a clean value.
+                val dp = px / density
+                return if (dp == dp.toInt().toFloat()) dp.toInt().toString() else "%.2f".format(dp)
+            }
+            val js = "document.documentElement.style.setProperty('--sat','${toDp(top)}px');" +
+                "document.documentElement.style.setProperty('--sab','${toDp(bottom)}px');" +
+                "document.documentElement.style.setProperty('--sal','${toDp(left)}px');" +
+                "document.documentElement.style.setProperty('--sar','${toDp(right)}px');"
+            webView.evaluateJavascript(js, null)
             insets
         }
     }
