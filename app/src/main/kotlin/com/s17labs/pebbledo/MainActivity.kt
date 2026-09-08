@@ -45,12 +45,10 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var backCallback: OnBackPressedCallback
 
-    // Current theme colors (ints) + whether a web dialog is open. The native
-    // strips are painted from these so the header stays continuous and everything
-    // dims together with the web dialog overlay (see setScrim).
+    // Current theme colors (ints). The native strips are painted from these so
+    // the header stays continuous with the web top bar.
     private var themeBg: Int = Color.parseColor("#F0F2F5")
     private var themeNav: Int = Color.parseColor("#e4e7ec")
-    private var scrimOn: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -281,32 +279,12 @@ class MainActivity : AppCompatActivity() {
         if (changed) renderBackground()
     }
 
-    /**
-     * Dim or undim the native strips while a web dialog is open.
-     * The web overlay (.ov) can't paint outside the WebView, so the shell dims
-     * its own strips to the exact same value (see dimForScrim).
-     */
-    internal fun setScrim(on: Boolean) {
-        scrimOn = on
-        renderBackground()
-    }
-
     private fun renderBackground() {
         webView.setBackgroundColor(themeBg)
         window.setBackgroundDrawable(ColorDrawable(themeBg))
-        rootContainer.setBackgroundColor(if (scrimOn) dimForScrim(themeBg) else themeBg)
-        topStrip.setBackgroundColor(if (scrimOn) dimForScrim(themeNav) else themeNav)
-        bottomStrip.setBackgroundColor(if (scrimOn) dimForScrim(themeBg) else themeBg)
-    }
-
-    /** Match the web dialog overlay rgba(0,0,0,.6): out = src * (1 - .6). */
-    private fun dimForScrim(color: Int): Int {
-        val f = 0.4f
-        return Color.rgb(
-            ((color shr 16 and 0xFF) * f).toInt(),
-            ((color shr 8 and 0xFF) * f).toInt(),
-            ((color and 0xFF) * f).toInt()
-        )
+        rootContainer.setBackgroundColor(themeBg)
+        topStrip.setBackgroundColor(themeNav)
+        bottomStrip.setBackgroundColor(themeBg)
     }
 
     /** Background color saved by the web app on a previous run (or the default). */

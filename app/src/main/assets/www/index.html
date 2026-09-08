@@ -1233,28 +1233,14 @@ document.getElementById('expDone').addEventListener('click',()=>closeDlg('ovExpo
    DIALOGS
 ════════════════════════════════════════════ */
 const dlgStack=[];
-/* Dim the native status/nav strips together with the dialog overlay (.ov is
-   position:fixed inside the WebView, so it can't paint over the strips — the
-   native shell dims its own background to match rgba(0,0,0,.6)). The delayed
-   off-check covers chained dialogs (settings → export/about) reopening ~180ms
-   after the previous one closes. */
-function syncScrim(on){
-  if(!(hasNB()&&NativeBridge.isNative()))return;
-  try{
-    if(on){NativeBridge.emit('scrim',{on:true});}
-    else{setTimeout(()=>{try{if(!document.querySelector('.ov.open'))NativeBridge.emit('scrim',{on:false})}catch(e){}},250);}
-  }catch(e){}
-}
 function openDlg(id,dismissable=true){
   const el=document.getElementById(id);
   el.classList.add('open');
   if(dismissable&&!dlgStack.includes(id))dlgStack.push(id);
-  syncScrim(true);
 }
 function closeDlg(id){
   document.getElementById(id).classList.remove('open');
   const i=dlgStack.indexOf(id);if(i>-1)dlgStack.splice(i,1);
-  syncScrim(false);
 }
 
 /**

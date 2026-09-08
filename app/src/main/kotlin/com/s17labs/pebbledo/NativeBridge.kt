@@ -160,7 +160,6 @@ class NativeBridge(private val activity: MainActivity) {
      *   - "exit" → exit the app (back button reached the root UI state)
      *   - "bg"   → update the native chrome to match the web theme
      *              (payload: {color: page bg, nav: top bar bg})
-     *   - "scrim" → dim/undim the native strips while a web dialog is open
      */
     @JavascriptInterface
     fun emit(event: String, payload: String) {
@@ -174,10 +173,6 @@ class NativeBridge(private val activity: MainActivity) {
                         val nav = data.optString("nav")
                         activity.runOnUiThread { activity.applyBackground(color, nav) }
                     }
-                }
-                "scrim" -> {
-                    val on = data.optBoolean("on", false)
-                    activity.runOnUiThread { activity.setScrim(on) }
                 }
             }
         } catch (e: Exception) {
