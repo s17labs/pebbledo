@@ -991,7 +991,6 @@ function makeRow(task){
   // its own long-press handling, our timer dies with it. The context-menu
   // signal that follows still tells us the user held this row — select it.
   row.addEventListener('contextmenu',e=>{
-    toast('LP menu');
     if(isSelecting){e.preventDefault();return}
     if(Date.now()-lastRowTouchStart>2000)return; // genuine mouse right-click: leave alone
     e.preventDefault();
@@ -1006,10 +1005,10 @@ function makeRow(task){
     if(e.target.closest('.dh')||row.classList.contains('editing'))return;
     const th=e.touches&&e.touches[0];
     lpX=th?th.clientX:0;lpY=th?th.clientY:0;
-    longPressTimer=setTimeout(()=>{toast('LP timer');vibrate([30,20,40]);selectModeEnterTime=Date.now();enterSelectMode(task.id)},500);
+    longPressTimer=setTimeout(()=>{vibrate([30,20,40]);selectModeEnterTime=Date.now();enterSelectMode(task.id)},500);
   },{passive:true});
   row.addEventListener('touchend',()=>{lastTouchEnd=Date.now();clearTimeout(longPressTimer)});
-  row.addEventListener('touchcancel',()=>{toast('LP cancel');clearTimeout(longPressTimer)});
+  row.addEventListener('touchcancel',()=>clearTimeout(longPressTimer));
   row.addEventListener('touchmove',e=>{
     const th=e.touches&&e.touches[0];
     if(th&&Math.hypot(th.clientX-lpX,th.clientY-lpY)<=12)return;
@@ -1057,7 +1056,7 @@ function enterSelectMode(firstId){
   document.body.classList.add('selecting');
   document.getElementById('mainNb').style.display='none';
   document.getElementById('selNb').classList.add('active');
-  updateSelUI();render(false);toast('LP shown');
+  updateSelUI();render(false);
 }
 function exitSelectMode(){
   isSelecting=false;selectedIds.clear();suppressSelectClick=false;
