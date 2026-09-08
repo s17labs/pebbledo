@@ -728,7 +728,7 @@ function t(key,...args){
 let tasks=[],archived=[];
 let editId=null,pendingId=null,saveTimer=null;
 let currentView='main';
-let isSelecting=false,selectedIds=new Set(),longPressTimer=null,selectModeEnterTime=0,suppressSelectClick=false;
+let isSelecting=false,selectedIds=new Set(),longPressTimer=null,selectModeEnterTime=0,suppressSelectClick=false,lastTouchEnd=0;
 let exportScope='todos',exportFmt='text',importDest='auto';
 let font='sys',theme='slate',fontSize=16,radius=10,haptics=true;
 let lang=window._preloadLang||'en';
@@ -992,12 +992,16 @@ function makeRow(task){
     if(e.target.closest('.dh')||row.classList.contains('editing'))return;
     longPressTimer=setTimeout(()=>{vibrate([30,20,40]);selectModeEnterTime=Date.now();enterSelectMode(task.id)},500);
   },{passive:true});
-  row.addEventListener('touchend',()=>clearTimeout(longPressTimer));
+  row.addEventListener('touchend',()=>{lastTouchEnd=Date.now();clearTimeout(longPressTimer)});
   row.addEventListener('touchcancel',()=>clearTimeout(longPressTimer));
   row.addEventListener('touchmove',()=>clearTimeout(longPressTimer));
   // Mouse / desktop long-press: press-and-hold left button to multi-select.
   row.addEventListener('mousedown',e=>{
     if(e.button!==0)return;
+    // Compatibility mouse events fired after a touch are ghosts, not real
+    // presses — they arrive after touchend but before the release click, so
+    // they must not disarm anything the touch gesture set up.
+    if((e.sourceCapabilities&&e.sourceCapabilities.firesTouchEvents)||Date.now()-lastTouchEnd<500)return;
     if(isSelecting){suppressSelectClick=false;return}
     if(e.target.closest('.dh')||row.classList.contains('editing'))return;
     clearTimeout(longPressTimer);
