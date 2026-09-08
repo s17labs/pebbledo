@@ -218,6 +218,13 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
 .export-done-btn{width:100%;padding:11px;background-color:var(--fill);border:none;border-radius:var(--r);font-size:14px;font-weight:600;color:#fff;transition:background-color .3s ease;margin-top:4px;}
 .export-done-btn:active{opacity:.7}
 
+/* ── Import ─────────────────────────────────────────────────── */
+#importText{width:100%;min-height:120px;max-height:220px;background-color:var(--sel);border:1.5px solid var(--div);border-radius:var(--r);color:var(--tx);font-size:13px;font-family:inherit;padding:10px 12px;resize:vertical;line-height:1.5;user-select:text;-webkit-user-select:text;}
+#importText:focus{border-color:var(--fill)}
+#importText::placeholder{color:var(--muted)}
+.imp-btn-row{display:flex;gap:8px}
+.imp-btn-row .export-back-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px}
+
 .ab{display:flex;flex-direction:column;align-items:center;gap:10px}
 .ab-icon{width:68px;height:68px;border-radius:18px;background-color:var(--fill);display:flex;align-items:center;justify-content:center;margin-bottom:2px;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:background-color .4s ease;}
 .ab-icon i{font-size:32px;color:#fff}
@@ -329,6 +336,7 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
   </div>
   <span class="sel-count" id="selCount">0 selected</span>
   <div class="sel-actions">
+    <button class="nb-btn" id="btnSelCopy"><i class="fa-solid fa-copy"></i></button>
     <button class="nb-btn" id="btnSelArchive"><i class="fa-solid fa-box-archive"></i></button>
     <button class="nb-btn" id="btnSelDelete"><i class="fa-solid fa-trash"></i></button>
   </div>
@@ -394,6 +402,7 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
     <div class="ss-divider"></div>
     <div class="ss" style="display:flex;flex-direction:column;gap:10px">
       <button class="action-row" id="btnExport"><i class="fa-solid fa-arrow-up-from-bracket"></i><span id="ssExport">Export Todos</span></button>
+      <button class="action-row" id="btnImport"><i class="fa-solid fa-arrow-right-to-bracket"></i><span id="ssImport">Import Todos</span></button>
       <button class="action-row" id="btnAbout"><i class="fa-solid fa-circle-info"></i><span id="ssAbout">About PebbleDo</span></button>
     </div>
   </div>
@@ -461,6 +470,54 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
       <p id="expCopiedText">Copied!</p>
       <span id="expSuccessDetail"></span>
       <button class="export-done-btn" id="expDone">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT -->
+<div class="ov" id="ovImport">
+  <div class="dlg">
+    <button class="dlg-x" id="xImport"><i class="fa-solid fa-xmark"></i></button>
+    <p class="dlg-h" id="importTitle">Import</p>
+    <div class="export-step active" id="impStep1">
+      <p class="export-step-label" id="impPasteLabel">Paste exported text</p>
+      <textarea id="importText" rows="5" spellcheck="false"></textarea>
+      <div class="imp-btn-row">
+        <button class="export-back-btn" id="impPasteBtn"><i class="fa-solid fa-clipboard" style="font-size:12px"></i> <span id="impPasteText">Paste</span></button>
+      </div>
+      <p class="export-step-label" id="impDestLabel">Import to</p>
+      <div class="export-choice-grid">
+        <div class="export-choice selected" data-dest="auto">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <div class="export-choice-text">
+            <div class="export-choice-label" id="impAutoLabel">Auto-detect</div>
+            <div class="export-choice-sub"   id="impAutoSub">Split todos &amp; archive from text</div>
+          </div>
+        </div>
+        <div class="export-choice" data-dest="todos">
+          <i class="fa-solid fa-list-check"></i>
+          <div class="export-choice-text">
+            <div class="export-choice-label" id="impTodosLabel">Todos only</div>
+            <div class="export-choice-sub"   id="impTodosSub">Add everything as active todos</div>
+          </div>
+        </div>
+        <div class="export-choice" data-dest="archive">
+          <i class="fa-solid fa-box-archive"></i>
+          <div class="export-choice-text">
+            <div class="export-choice-label" id="impArchLabel">Archive only</div>
+            <div class="export-choice-sub"   id="impArchSub">Add everything as archived</div>
+          </div>
+        </div>
+      </div>
+      <div class="export-step-nav">
+        <button class="export-next-btn" id="impDo"><i class="fa-solid fa-arrow-right-to-bracket" style="font-size:13px"></i> <span id="impDoText">Import</span></button>
+      </div>
+    </div>
+    <div class="export-success" id="impSuccess">
+      <div class="export-success-icon"><i class="fa-solid fa-check"></i></div>
+      <p id="impDoneText">Imported!</p>
+      <span id="impSuccessDetail"></span>
+      <button class="export-done-btn" id="impDone">Done</button>
     </div>
   </div>
 </div>
@@ -569,7 +626,7 @@ const T = {
     nSelected:n=>n===1?'1 selected':`${n} selected`,
     settings:'Settings',ssTheme:'Theme',ssFont:'Font',ssFontSize:'Font Size',
     ssRadius:'Corner Radius',ssHaptics:'Haptic Feedback',ssLang:'Language',
-    ssExport:'Export Todos',ssAbout:'About PebbleDo',
+    ssExport:'Export Todos',ssImport:'Import Todos',ssAbout:'About PebbleDo',
     exportTitle:'Export',whatToExport:'What to export',
     todosLabel:'Todos only',todosSub:'Your active to-do list',
     archLabel:'Archive only',archSub:'Completed tasks',
@@ -581,6 +638,15 @@ const T = {
     copyFail:'Couldn\u2019t copy',exportEmpty:'Nothing to export',
     scopeTodos:'todos',scopeArchive:'archive',scopeAll:'todos + archive',
     fmtText:'plain text',fmtMd:'Markdown',
+    importTitle:'Import',impPasteLabel:'Paste exported text',
+    impPastePh:'Paste text here\u2026',impPasteBtn:'Paste',
+    impDestLabel:'Import to',impAutoLabel:'Auto-detect',
+    impAutoSub:'Split todos & archive from text',
+    impTodosSub:'Add everything as active todos',
+    impArchSub:'Add everything as archived',
+    impBtn:'Import',imported:'Imported!',impDone:'Done',
+    importEmpty:'Nothing to import',pasteFail:'Couldn\u2019t read clipboard',
+    selCopyTitle:'Copy selected',
     clearTitle:'Clear Archive',clearMsg:"Delete all archived todos permanently? This can\u2019t be undone.",
     cancel:'Cancel',clearAll:'Clear All',
     delSelTitle:'Delete Selected',
@@ -599,7 +665,7 @@ const T = {
     nSelected:n=>n===1?'1 vybraná':(n>=2&&n<=4?`${n} vybrané`:`${n} vybraných`),
     settings:'Nastavenia',ssTheme:'Téma',ssFont:'Písmo',ssFontSize:'Veľkosť písma',
     ssRadius:'Zaoblenie rohov',ssHaptics:'Haptická odozva',ssLang:'Jazyk',
-    ssExport:'Exportovať úlohy',ssAbout:'O PebbleDo',
+    ssExport:'Exportovať úlohy',ssImport:'Importovať úlohy',ssAbout:'O PebbleDo',
     exportTitle:'Export',whatToExport:'Čo exportovať',
     todosLabel:'Len úlohy',todosSub:'Tvoj aktívny zoznam úloh',
     archLabel:'Len archív',archSub:'Dokončené úlohy',
@@ -611,6 +677,15 @@ const T = {
     copyFail:'Kopírovanie sa nepodarilo',exportEmpty:'Nič na exportovanie',
     scopeTodos:'úlohy',scopeArchive:'archív',scopeAll:'úlohy + archív',
     fmtText:'obyčajný text',fmtMd:'Markdown',
+    importTitle:'Import',impPasteLabel:'Prilep exportovaný text',
+    impPastePh:'Prilep text sem\u2026',impPasteBtn:'Prilepiť',
+    impDestLabel:'Kam importovať',impAutoLabel:'Rozpoznať automaticky',
+    impAutoSub:'Rozdelí úlohy a archív podľa textu',
+    impTodosSub:'Pridať všetko ako aktívne úlohy',
+    impArchSub:'Pridať všetko ako archivované',
+    impBtn:'Importovať',imported:'Importované!',impDone:'Hotovo',
+    importEmpty:'Nič na importovanie',pasteFail:'Schránku sa nepodarilo prečítať',
+    selCopyTitle:'Kopírovať vybrané',
     clearTitle:'Vymazať archív',clearMsg:'Natrvalo vymazať všetky archivované úlohy? Toto sa nedá vrátiť.',
     cancel:'Zrušiť',clearAll:'Vymazať všetko',
     delSelTitle:'Vymazať vybrané',
@@ -639,7 +714,7 @@ let tasks=[],archived=[];
 let editId=null,pendingId=null,saveTimer=null;
 let currentView='main';
 let isSelecting=false,selectedIds=new Set(),longPressTimer=null,selectModeEnterTime=0;
-let exportScope='todos',exportFmt='text';
+let exportScope='todos',exportFmt='text',importDest='auto';
 let font='sys',theme='slate',fontSize=16,radius=10,haptics=true;
 let lang=window._preloadLang||'en';
 
@@ -723,6 +798,7 @@ function applyLang(){
   document.getElementById('ssHaptics').textContent=t('ssHaptics');
   document.getElementById('ssLang').textContent=t('ssLang');
   document.getElementById('ssExport').textContent=t('ssExport');
+  document.getElementById('ssImport').textContent=t('ssImport');
   document.getElementById('ssAbout').textContent=t('ssAbout');
   document.querySelectorAll('#settingsLangBtns .lang-btn').forEach(b=>b.classList.toggle('on',b.dataset.l===lang));
   document.querySelectorAll('#obLangBtns .ob-lang-btn').forEach(b=>b.classList.toggle('on',b.dataset.l===lang));
@@ -744,6 +820,21 @@ function applyLang(){
   document.getElementById('expCopyText').textContent=t('copyBtn');
   document.getElementById('expCopiedText').textContent=t('copied');
   document.getElementById('expDone').textContent=t('done');
+  document.getElementById('btnSelCopy').title=t('selCopyTitle');
+  document.getElementById('importTitle').textContent=t('importTitle');
+  document.getElementById('impPasteLabel').textContent=t('impPasteLabel');
+  document.getElementById('importText').placeholder=t('impPastePh');
+  document.getElementById('impPasteText').textContent=t('impPasteBtn');
+  document.getElementById('impDestLabel').textContent=t('impDestLabel');
+  document.getElementById('impAutoLabel').textContent=t('impAutoLabel');
+  document.getElementById('impAutoSub').textContent=t('impAutoSub');
+  document.getElementById('impTodosLabel').textContent=t('todosLabel');
+  document.getElementById('impTodosSub').textContent=t('impTodosSub');
+  document.getElementById('impArchLabel').textContent=t('archLabel');
+  document.getElementById('impArchSub').textContent=t('impArchSub');
+  document.getElementById('impDoText').textContent=t('impBtn');
+  document.getElementById('impDoneText').textContent=t('imported');
+  document.getElementById('impDone').textContent=t('impDone');
   document.getElementById('clearTitle').textContent=t('clearTitle');
   document.getElementById('clearMsg').textContent=t('clearMsg');
   document.getElementById('btnCancelClear').textContent=t('cancel');
@@ -887,6 +978,15 @@ function makeRow(task){
   },{passive:true});
   row.addEventListener('touchend',()=>clearTimeout(longPressTimer));
   row.addEventListener('touchmove',()=>clearTimeout(longPressTimer));
+  // Mouse / desktop long-press: press-and-hold left button to multi-select.
+  row.addEventListener('mousedown',e=>{
+    if(e.button!==0||isSelecting||e.target.closest('.dh')||row.classList.contains('editing'))return;
+    clearTimeout(longPressTimer);
+    longPressTimer=setTimeout(()=>{vibrate([30,20,40]);selectModeEnterTime=Date.now();enterSelectMode(task.id)},500);
+  });
+  row.addEventListener('mouseup',()=>clearTimeout(longPressTimer));
+  row.addEventListener('mouseleave',()=>clearTimeout(longPressTimer));
+  row.addEventListener('mousemove',()=>clearTimeout(longPressTimer));
   const dh=row.querySelector('.dh');
   dh.addEventListener('touchstart',e=>initDrag(e,task.id),{passive:false});
   dh.addEventListener('mousedown',e=>initDrag(e,task.id));
@@ -938,6 +1038,28 @@ function deleteSelected(){
   if(!selectedIds.size)return;
   document.getElementById('delConfirmMsg').textContent=t('delMsg',selectedIds.size);
   openDlg('ovConfirmDel');
+}
+function copyTextToClipboard(text,onOk,onFail){
+  function legacy(){
+    const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;top:0;left:0';document.body.appendChild(ta);ta.select();
+    let ok=false;try{ok=document.execCommand('copy')}catch(e){}
+    document.body.removeChild(ta);
+    ok?onOk():onFail();
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(onOk).catch(legacy);
+  }else{
+    legacy();
+  }
+}
+function copySelected(){
+  if(!selectedIds.size)return;
+  const lines=[];
+  tasks.forEach(t_=>{if(selectedIds.has(t_.id)&&t_.text.trim())lines.push('\u2022 '+flatten(t_.text,' / '))});
+  if(!lines.length){vibrate(30);toast(t('exportEmpty'));return}
+  copyTextToClipboard(lines.join('\n'),
+    ()=>{vibrate(40);toast(t('copied'))},
+    ()=>{vibrate([30,20,30]);toast(t('copyFail'))});
 }
 
 /* ════════════════════════════════════════════
@@ -1230,6 +1352,99 @@ document.getElementById('expCopy').addEventListener('click',()=>{
 document.getElementById('expDone').addEventListener('click',()=>closeDlg('ovExport'));
 
 /* ════════════════════════════════════════════
+   IMPORT — parses back everything export produces
+   plain text (• one per line, optional "todos:"/"archive:" sections)
+   + markdown (- [ ] / - [x], optional "## todos"/"## archive" sections)
+════════════════════════════════════════════ */
+function normHeader(s){
+  try{s=String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}catch(e){s=String(s).toLowerCase()}
+  return s.replace(/^[\s#>\-*\u2022]+/,'').replace(/[:\s]+$/,'').trim();
+}
+function headerSection(line){
+  const raw=String(line).trim();if(!raw)return null;
+  const hasHash=/^#+/.test(raw),hasColon=/:\s*$/.test(raw);
+  const h=normHeader(raw);if(!h||h.length>24)return null;
+  // "todos + archive" scope summary (shown in the export success line) is
+  // never a task — skip it without changing the current section.
+  if(h.indexOf('+')>-1){
+    if(h.indexOf('todo')>-1||h.indexOf('uloh')>-1||h.indexOf('archiv')>-1||h.indexOf('archive')>-1)return 'ignore';
+    return null;
+  }
+  const isArch=(h==='archive'||h==='archiv'||h==='done'||h==='completed'||h==='hotovo'||h.indexOf('archiv')===0||h.indexOf('archive')===0);
+  const isTodo=(h==='todos'||h==='todo'||h==='tasks'||h==='task'||h==='ulohy'||h==='uloha'||h.indexOf('todo')===0||h.indexOf('uloh')===0);
+  if(!isArch&&!isTodo)return null;
+  // Export headers always carry ## or a trailing colon; bare single-word
+  // headers are also accepted, anything longer must carry a marker so a
+  // task like "Todo buy milk" is never swallowed as a section.
+  if(hasHash||hasColon)return isArch?'archive':'todos';
+  if(h==='archive'||h==='archiv'||h==='todos'||h==='todo'||h==='ulohy')return isArch?'archive':'todos';
+  return null;
+}
+function parseImportText(raw){
+  const todos=[],archived=[],ordered=[];
+  let section=null,last=null;
+  function push(text,done){
+    text=String(text).trim();if(!text)return;
+    const rec={text,done:!!done};ordered.push(rec);
+    if(rec.done)archived.push(text);else todos.push(text);
+    last=rec;
+  }
+  String(raw||'').split(/\r?\n/).forEach(line=>{
+    if(!line||!line.trim()){last=null;return}
+    // Markdown multiline continuation from export ("- [ ] a\n  b").
+    if(last&&/^\s{2,}\S/.test(line)){
+      last.text+='\n'+line.trim();
+      if(last.done)archived[archived.length-1]=last.text;else todos[todos.length-1]=last.text;
+      return;
+    }
+    const trimmed=line.trim();
+    const sec=headerSection(trimmed);
+    if(sec==='ignore'){last=null;return}
+    if(sec){section=sec;last=null;return}
+    let m=trimmed.match(/^(?:[-*\u2022]\s*)?\[([ xX])\]\s*([\s\S]*)$/);
+    if(m){push(m[2]||'',m[1].toLowerCase()==='x');return}
+    let b=trimmed.match(/^[•\-\*–—]\s+([\s\S]*)$/);
+    if(b){push(b[1]||'',section==='archive');return}
+    let n=trimmed.match(/^\d+[.\)]\s+([\s\S]*)$/);
+    if(n){push(n[1]||'',section==='archive');return}
+    push(trimmed,section==='archive');
+  });
+  return{todos,archived,items:ordered};
+}
+function resetImport(){
+  importDest='auto';
+  document.querySelectorAll('#ovImport .export-choice').forEach((el,i)=>el.classList.toggle('selected',i===0));
+  document.getElementById('impStep1').classList.add('active');
+  document.getElementById('impSuccess').classList.remove('active');
+  document.getElementById('importTitle').textContent=t('importTitle');
+  document.getElementById('importText').value='';
+}
+function doImport(){
+  const raw=document.getElementById('importText').value||'';
+  const parsed=parseImportText(raw);
+  let toTodos=parsed.todos.slice(),toArch=parsed.archived.slice();
+  if(importDest==='todos'){toTodos=parsed.items.map(r=>r.text);toArch=[]}
+  else if(importDest==='archive'){toArch=parsed.items.map(r=>r.text);toTodos=[]}
+  const nT=toTodos.length,nA=toArch.length;
+  if(!nT&&!nA){vibrate(30);toast(t('importEmpty'));return}
+  toTodos.forEach(tx=>tasks.push({id:uid(),text:tx}));
+  toArch.forEach(tx=>archived.push({id:uid(),text:tx}));
+  save();render(false);
+  if(currentView==='arch')renderArch(true);
+  updateFab();updateHint();
+  document.getElementById('impStep1').classList.remove('active');
+  document.getElementById('impSuccess').classList.add('active');
+  document.getElementById('importTitle').textContent='';
+  document.getElementById('impDoneText').textContent=t('imported');
+  let detail='';
+  if(nT&&nA)detail=`${nT} ${t('scopeTodos')} \u00b7 ${nA} ${t('scopeArchive')}`;
+  else if(nT)detail=`${nT} ${t('scopeTodos')}`;
+  else detail=`${nA} ${t('scopeArchive')}`;
+  document.getElementById('impSuccessDetail').textContent=detail;
+  vibrate(40);
+}
+
+/* ════════════════════════════════════════════
    DIALOGS
 ════════════════════════════════════════════ */
 const dlgStack=[];
@@ -1268,6 +1483,18 @@ document.getElementById('btnExport').addEventListener('click',()=>{closeDlg('ovS
 document.getElementById('xExport').addEventListener('click',()=>closeDlg('ovExport'));
 document.getElementById('ovExport').addEventListener('click',e=>{if(e.target===document.getElementById('ovExport'))closeDlg('ovExport')});
 
+document.getElementById('btnImport').addEventListener('click',()=>{closeDlg('ovSet');resetImport();setTimeout(()=>openDlg('ovImport'),180)});
+document.getElementById('xImport').addEventListener('click',()=>closeDlg('ovImport'));
+document.getElementById('ovImport').addEventListener('click',e=>{if(e.target===document.getElementById('ovImport'))closeDlg('ovImport')});
+document.querySelector('#ovImport .export-choice-grid').addEventListener('click',e=>{const c=e.target.closest('.export-choice[data-dest]');if(!c)return;importDest=c.dataset.dest;document.querySelectorAll('#ovImport .export-choice').forEach(el=>el.classList.toggle('selected',el===c))});
+document.getElementById('impPasteBtn').addEventListener('click',()=>{
+  if(navigator.clipboard&&navigator.clipboard.readText){
+    navigator.clipboard.readText().then(txt=>{document.getElementById('importText').value=txt||'';document.getElementById('importText').focus()}).catch(()=>{vibrate([30,20,30]);toast(t('pasteFail'))});
+  }else{vibrate([30,20,30]);toast(t('pasteFail'))}
+});
+document.getElementById('impDo').addEventListener('click',doImport);
+document.getElementById('impDone').addEventListener('click',()=>closeDlg('ovImport'));
+
 document.getElementById('btnAbout').addEventListener('click',()=>{closeDlg('ovSet');setTimeout(()=>openDlg('ovAbout'),180)});
 document.getElementById('xAbout').addEventListener('click',()=>closeDlg('ovAbout'));
 document.getElementById('ovAbout').addEventListener('click',e=>{if(e.target===document.getElementById('ovAbout'))closeDlg('ovAbout')});
@@ -1292,6 +1519,7 @@ document.getElementById('btnConfirmDel').addEventListener('click',()=>{
 
 document.getElementById('archFab').addEventListener('click',()=>openDlg('ovConfirm'));
 document.getElementById('btnSelCancel').addEventListener('click',()=>exitSelectMode());
+document.getElementById('btnSelCopy').addEventListener('click',()=>copySelected());
 document.getElementById('btnSelArchive').addEventListener('click',()=>archiveSelected());
 document.getElementById('btnSelDelete').addEventListener('click',()=>deleteSelected());
 
