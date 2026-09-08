@@ -224,6 +224,10 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
 #importText::placeholder{color:var(--muted)}
 .imp-btn-row{display:flex;gap:8px}
 .imp-btn-row .export-back-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px}
+/* Keyboard-open state: pin the import sheet to the top of the visible area
+   so it never slides behind the keyboard while typing. Toggled via fitImportDlg(). */
+#ovImport.kb{align-items:flex-start;padding-top:12px}
+#ovImport.kb .dlg{margin:0}
 
 .ab{display:flex;flex-direction:column;align-items:center;gap:10px}
 .ab-icon{width:68px;height:68px;border-radius:18px;background-color:var(--fill);display:flex;align-items:center;justify-content:center;margin-bottom:2px;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:background-color .4s ease;}
@@ -402,7 +406,7 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
     <div class="ss-divider"></div>
     <div class="ss" style="display:flex;flex-direction:column;gap:10px">
       <button class="action-row" id="btnExport"><i class="fa-solid fa-arrow-up-from-bracket"></i><span id="ssExport">Export Todos</span></button>
-      <button class="action-row" id="btnImport"><i class="fa-solid fa-download"></i><span id="ssImport">Import Todos</span></button>
+      <button class="action-row" id="btnImport"><i class="fa-solid fa-arrow-right-to-bracket fa-rotate-90"></i><span id="ssImport">Import Todos</span></button>
       <button class="action-row" id="btnAbout"><i class="fa-solid fa-circle-info"></i><span id="ssAbout">About PebbleDo</span></button>
     </div>
   </div>
@@ -510,7 +514,7 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
         </div>
       </div>
       <div class="export-step-nav">
-        <button class="export-next-btn" id="impDo"><i class="fa-solid fa-download" style="font-size:13px"></i> <span id="impDoText">Import</span></button>
+        <button class="export-next-btn" id="impDo"><i class="fa-solid fa-arrow-right-to-bracket fa-rotate-90" style="font-size:13px"></i> <span id="impDoText">Import</span></button>
       </div>
     </div>
     <div class="export-success" id="impSuccess">
@@ -1418,6 +1422,29 @@ function resetImport(){
   document.getElementById('impSuccess').classList.remove('active');
   document.getElementById('importTitle').textContent=t('importTitle');
   document.getElementById('importText').value='';
+  unfitImportDlg();
+}
+/* Keep the import sheet pinned above the keyboard while typing: cap the
+   dialog to the visible area (same kbHeight/layoutResized pattern as the
+   todo-list keyboard lift) so there is nothing to scroll. On the
+   adjustResize path the window already shrank, so leave it alone. */
+function fitImportDlg(){
+  const ov=document.getElementById('ovImport'),dlg=ov&&ov.querySelector('.dlg');
+  if(!ov||!dlg)return;
+  const kb=kbHeight();
+  if(kb>80&&!layoutResized()&&ov.classList.contains('open')){
+    const layoutH=window.innerHeight||document.documentElement.clientHeight||0;
+    const vvH=window.visualViewport?window.visualViewport.height:layoutH;
+    const visible=Math.max(240,Math.min(vvH,layoutH-kb));
+    ov.classList.add('kb');
+    dlg.style.maxHeight=(visible-24)+'px';
+  }else unfitImportDlg();
+}
+function unfitImportDlg(){
+  const ov=document.getElementById('ovImport'),dlg=ov&&ov.querySelector('.dlg');
+  if(!ov||!dlg)return;
+  ov.classList.remove('kb');
+  dlg.style.maxHeight='';
 }
 function doImport(){
   const raw=document.getElementById('importText').value||'';
@@ -1510,6 +1537,15 @@ document.getElementById('impPasteBtn').addEventListener('click',()=>{
 });
 document.getElementById('impDo').addEventListener('click',doImport);
 document.getElementById('impDone').addEventListener('click',()=>closeDlg('ovImport'));
+// Pin the sheet above the keyboard while typing in the import box; release on blur.
+(function(){
+  const box=document.getElementById('importText');
+  box.addEventListener('focus',()=>{setTimeout(fitImportDlg,120);setTimeout(fitImportDlg,400)});
+  box.addEventListener('blur',()=>unfitImportDlg());
+  if(window.visualViewport)window.visualViewport.addEventListener('resize',()=>{
+    if(document.activeElement===box)setTimeout(fitImportDlg,60);
+  });
+})();
 
 document.getElementById('btnAbout').addEventListener('click',()=>{closeDlg('ovSet');setTimeout(()=>openDlg('ovAbout'),180)});
 document.getElementById('xAbout').addEventListener('click',()=>closeDlg('ovAbout'));
