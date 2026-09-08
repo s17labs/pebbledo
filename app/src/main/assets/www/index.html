@@ -219,7 +219,7 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
 .export-done-btn:active{opacity:.7}
 
 /* ── Import ─────────────────────────────────────────────────── */
-#importText{width:100%;min-height:120px;max-height:220px;background-color:var(--sel);border:1.5px solid var(--div);border-radius:var(--r);color:var(--tx);font-size:13px;font-family:inherit;padding:10px 12px;resize:vertical;line-height:1.5;user-select:text;-webkit-user-select:text;}
+#importText{width:100%;min-height:120px;max-height:220px;background-color:var(--sel);border:1.5px solid var(--div);border-radius:var(--r);color:var(--tx);font-size:13px;font-family:inherit;padding:10px 12px;resize:none;line-height:1.5;user-select:text;-webkit-user-select:text;}
 #importText:focus{border-color:var(--fill)}
 #importText::placeholder{color:var(--muted)}
 .imp-btn-row{display:flex;gap:8px}
@@ -402,7 +402,7 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
     <div class="ss-divider"></div>
     <div class="ss" style="display:flex;flex-direction:column;gap:10px">
       <button class="action-row" id="btnExport"><i class="fa-solid fa-arrow-up-from-bracket"></i><span id="ssExport">Export Todos</span></button>
-      <button class="action-row" id="btnImport"><i class="fa-solid fa-arrow-right-to-bracket"></i><span id="ssImport">Import Todos</span></button>
+      <button class="action-row" id="btnImport"><i class="fa-solid fa-download"></i><span id="ssImport">Import Todos</span></button>
       <button class="action-row" id="btnAbout"><i class="fa-solid fa-circle-info"></i><span id="ssAbout">About PebbleDo</span></button>
     </div>
   </div>
@@ -510,7 +510,7 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
         </div>
       </div>
       <div class="export-step-nav">
-        <button class="export-next-btn" id="impDo"><i class="fa-solid fa-arrow-right-to-bracket" style="font-size:13px"></i> <span id="impDoText">Import</span></button>
+        <button class="export-next-btn" id="impDo"><i class="fa-solid fa-download" style="font-size:13px"></i> <span id="impDoText">Import</span></button>
       </div>
     </div>
     <div class="export-success" id="impSuccess">
@@ -1488,9 +1488,25 @@ document.getElementById('xImport').addEventListener('click',()=>closeDlg('ovImpo
 document.getElementById('ovImport').addEventListener('click',e=>{if(e.target===document.getElementById('ovImport'))closeDlg('ovImport')});
 document.querySelector('#ovImport .export-choice-grid').addEventListener('click',e=>{const c=e.target.closest('.export-choice[data-dest]');if(!c)return;importDest=c.dataset.dest;document.querySelectorAll('#ovImport .export-choice').forEach(el=>el.classList.toggle('selected',el===c))});
 document.getElementById('impPasteBtn').addEventListener('click',()=>{
+  const box=document.getElementById('importText');
+  function pasteFailed(){
+    vibrate([30,20,30]);
+    toast(t('pasteFail'));
+    // Fall back to manual paste: focus the box so the user can long-press → Paste.
+    try{box.focus()}catch(e){}
+  }
+  // The WebView blocks the async clipboard API, so read through the native
+  // bridge instead (foreground clipboard read needs no permission).
+  if(hasNB()&&NativeBridge.isNative()){
+    let txt='';
+    try{txt=NativeBridge.getClipboardText()||''}catch(e){txt=''}
+    if(txt){box.value=txt;try{box.focus()}catch(e){}}
+    else pasteFailed();
+    return;
+  }
   if(navigator.clipboard&&navigator.clipboard.readText){
-    navigator.clipboard.readText().then(txt=>{document.getElementById('importText').value=txt||'';document.getElementById('importText').focus()}).catch(()=>{vibrate([30,20,30]);toast(t('pasteFail'))});
-  }else{vibrate([30,20,30]);toast(t('pasteFail'))}
+    navigator.clipboard.readText().then(txt=>{box.value=txt||'';try{box.focus()}catch(e){};if(!txt)pasteFailed()}).catch(pasteFailed);
+  }else pasteFailed();
 });
 document.getElementById('impDo').addEventListener('click',doImport);
 document.getElementById('impDone').addEventListener('click',()=>closeDlg('ovImport'));
