@@ -149,6 +149,31 @@ class NativeBridge(private val activity: MainActivity) {
     }
 
     // ─────────────────────────────────────────────────────
+    // Clipboard
+    // ─────────────────────────────────────────────────────
+
+    /**
+     * Read plain text from the system clipboard.
+     * Returns "" when the clipboard is empty, has no text, or can't be read.
+     * No permission needed — the app is in the foreground when JS calls this.
+     * JS: const text = NativeBridge.getClipboardText()
+     */
+    @JavascriptInterface
+    fun getClipboardText(): String {
+        return try {
+            val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = cm.primaryClip
+            if (clip != null && clip.itemCount > 0) {
+                clip.getItemAt(0).coerceToText(context)?.toString() ?: ""
+            } else {
+                ""
+            }
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    // ─────────────────────────────────────────────────────
     // Generic Event Bus (JS → Native)
     // ─────────────────────────────────────────────────────
 

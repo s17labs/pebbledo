@@ -145,6 +145,7 @@ Provides native Android functionality to JavaScript via `@JavascriptInterface`.
 | `openUrl(url)` | Opens URL in system browser | Main thread |
 | `vibrate(durationMs)` | Haptic feedback vibration (used for all haptics; WebView has no `navigator.vibrate`) | Main thread |
 | `share(text)` | Opens native share sheet | Main thread |
+| `getClipboardText()` | Returns system clipboard text (`""` when empty/unreadable; foreground read needs no permission) | Background thread (no UI work) |
 | `emit(event, payload)` | Generic event bus from JS to native. Handled events: `"exit"` (leave the app), `"bg"` (`{color}` — sync WebView background to theme) | Main thread |
 
 All UI operations run on the main thread via `runOnUiThread {}`.
@@ -158,6 +159,7 @@ JavaScript-side wrapper for the native bridge with graceful fallbacks for deskto
 - `NativeBridge.getDeviceInfo()`
 - `NativeBridge.openUrl(url)`
 - `NativeBridge.vibrate(durationMs)`
+- `NativeBridge.getClipboardText()` — `''` when empty/unreadable outside native shell returns `null` (fall back to `navigator.clipboard`)
 - `NativeBridge.share(text)`
 - `NativeBridge.emit(event, payload)`
 - `NativeBridge.on(event, callback)` — register event listeners
