@@ -53,10 +53,10 @@ button{font-family:inherit;cursor:pointer}
 body{
   background-color:var(--bg);color:var(--tx);font-family:var(--font);font-size:var(--fs);
   display:flex;flex-direction:column;height:100%;
-  padding-top:var(--sat, env(safe-area-inset-top, 0px));
-  padding-bottom:var(--sab, env(safe-area-inset-bottom, 0px));
-  padding-left:var(--sal, env(safe-area-inset-left, 0px));
-  padding-right:var(--sar, env(safe-area-inset-right, 0px));
+  /* Static safe areas (status/nav bars, cutout) come from native View padding
+     in MainActivity (zeroed before reaching the page), so no CSS inset padding
+     here — otherwise the top bar would sit doubly low. */
+  padding:0;
   -webkit-tap-highlight-color:transparent;
   transition:background-color .4s ease, color .4s ease;
   overflow:hidden;user-select:none;-webkit-user-select:none;

@@ -8,6 +8,7 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -43,7 +44,8 @@ class MainActivity : AppCompatActivity() {
         val startBg = loadSavedBackground()
 
         // Draw behind system bars for edge-to-edge display.
-        // In your CSS, use env(safe-area-inset-*) to add padding.
+        // Static safe areas are applied as WebView padding in setupEdgeToEdge(),
+        // so the web content needs no env(safe-area-inset-*) handling.
         WindowCompat.setDecorFitsSystemWindows(window, false)
         window.setBackgroundDrawable(ColorDrawable(startBg))
 
@@ -122,53 +124,48 @@ class MainActivity : AppCompatActivity() {
      * Edge-to-edge safe areas + keyboard signal.
      *
      * The app draws behind the status/nav bars (setDecorFitsSystemWindows(false)).
-     * Modern WebView forwards systemBars/displayCutout via CSS env(safe-area-inset-*)
-     * (M136+) and resizes the visual viewport for the keyboard (M139+) on its own —
-     * so we must NOT pad the WebView natively (that fights the built-in behavior
-     * and causes double/ghost padding).
+     * Static safe areas (systemBars/displayCutout) are applied as native View
+     * padding here, so they are correct from the very first frame — no flash of
+     * the top bar under the status bar while the page loads. The handled types
+     * are zeroed before passing insets on, so the WebView doesn't apply them a
+     * second time via CSS env(safe-area-inset-*).
      *
-     * Older WebViews report env() as 0, so as a fallback inject the same values
-     * as --sat/--sab/--sal/--sar CSS vars. The web CSS uses
-     * var(--sat, env(safe-area-inset-top, 0px)) etc., so it works on all versions.
-     *
-     * The keyboard is the exception: old WebViews with edge-to-edge get NO web
-     * signal at all (no layout resize, no visual-viewport resize — the keyboard
-     * just overlays). So forward the native IME inset as window.__nativeKb (CSS
-     * px) and nudge the page to re-scroll / blur. Newer WebViews will ALSO fire
-     * visualViewport resizes — both write the same padding value, so no double.
-     * Insets are returned unmodified so the WebView still receives them.
+     * The keyboard is the exception: old WebViews with edge-to-edge give the page
+     * NO web signal at all (no layout resize, no visual-viewport resize — the
+     * keyboard just overlays). So the native IME inset is forwarded as
+     * window.__nativeKb (CSS px) with a nudge to re-scroll / blur. Newer WebViews
+     * will ALSO fire visualViewport resizes — both write the same padding value,
+     * so no double. IME insets pass through unmodified so the WebView's own
+     * visual-viewport handling keeps working.
      */
     private fun setupEdgeToEdge() {
         var lastImeDp = 0f
-        ViewCompat.setOnApplyWindowInsetsListener(webView) { _, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(webView) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val cutout = insets.getInsets(WindowInsetsCompat.Type.displayCutout())
-            val top = maxOf(bars.top, cutout.top)
-            val bottom = maxOf(bars.bottom, cutout.bottom)
-            val left = maxOf(bars.left, cutout.left)
-            val right = maxOf(bars.right, cutout.right)
+            v.setPadding(
+                maxOf(bars.left, cutout.left),
+                maxOf(bars.top, cutout.top),
+                maxOf(bars.right, cutout.right),
+                maxOf(bars.bottom, cutout.bottom)
+            )
             val density = resources.displayMetrics.density
-            fun toDp(px: Int): String {
-                // CSS px == dp; trim trailing zeros for a clean value.
-                val dp = px / density
-                return if (dp == dp.toInt().toFloat()) dp.toInt().toString() else "%.2f".format(dp)
-            }
-            fun toDpF(px: Int): Float = px / density
-            val imeDp = toDpF(insets.getInsets(WindowInsetsCompat.Type.ime()).bottom)
+            val imeDp = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom / density
             val imeStr = if (imeDp == imeDp.toInt().toFloat()) imeDp.toInt().toString() else "%.2f".format(imeDp)
             val prevStr = if (lastImeDp == lastImeDp.toInt().toFloat()) lastImeDp.toInt().toString() else "%.2f".format(lastImeDp)
-            val js = "document.documentElement.style.setProperty('--sat','${toDp(top)}px');" +
-                "document.documentElement.style.setProperty('--sab','${toDp(bottom)}px');" +
-                "document.documentElement.style.setProperty('--sal','${toDp(left)}px');" +
-                "document.documentElement.style.setProperty('--sar','${toDp(right)}px');" +
-                "window.__nativeKb=$imeStr;" +
+            val js = "window.__nativeKb=$imeStr;" +
                 "(function(){var kb=$imeStr,prev=$prevStr;" +
                 "if(kb>80){var r=document.querySelector('.row.editing');if(r&&window.keepEditVisible)keepEditVisible(r);}" +
                 "else if(prev>80){var l=document.getElementById('tList');if(l)l.style.paddingBottom='';" +
                 "var ta=document.querySelector('.inp');if(ta)ta.blur();}})();"
             webView.evaluateJavascript(js, null)
             lastImeDp = imeDp
-            insets
+            WindowInsetsCompat.Builder(insets)
+                .setInsets(
+                    WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout(),
+                    Insets.NONE
+                )
+                .build()
         }
     }
 
