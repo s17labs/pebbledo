@@ -16,5 +16,13 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLayoutInDisplayCutoutMode" tools:targetApi="o_mr1">shortEdges</item>
+        <!-- Brand accent: tints the WebView text selection handles and the
+             cursor insertion-handle ("carrots") so they match the app instead
+             of showing the system default color. The blinking caret color
+             itself is themed per web theme via CSS caret-color. -->
+        <item name="colorPrimary">@color/brand_accent</item>
+        <item name="colorAccent">@color/brand_accent</item>
+        <item name="colorControlActivated">@color/brand_accent</item>
+        <item name="android:colorAccent">@color/brand_accent</item>
     </style>
 </resources>
