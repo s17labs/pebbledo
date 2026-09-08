@@ -119,7 +119,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Edge-to-edge safe areas.
+     * Edge-to-edge safe areas + keyboard signal.
      *
      * The app draws behind the status/nav bars (setDecorFitsSystemWindows(false)).
      * Modern WebView forwards systemBars/displayCutout via CSS env(safe-area-inset-*)
@@ -131,11 +131,15 @@ class MainActivity : AppCompatActivity() {
      * as --sat/--sab/--sal/--sar CSS vars. The web CSS uses
      * var(--sat, env(safe-area-inset-top, 0px)) etc., so it works on all versions.
      *
-     * IME is deliberately excluded here: the keyboard is handled by WebView's
-     * visual-viewport resizing + the page's keepEditVisible() scrolling.
+     * The keyboard is the exception: old WebViews with edge-to-edge get NO web
+     * signal at all (no layout resize, no visual-viewport resize — the keyboard
+     * just overlays). So forward the native IME inset as window.__nativeKb (CSS
+     * px) and nudge the page to re-scroll / blur. Newer WebViews will ALSO fire
+     * visualViewport resizes — both write the same padding value, so no double.
      * Insets are returned unmodified so the WebView still receives them.
      */
     private fun setupEdgeToEdge() {
+        var lastImeDp = 0f
         ViewCompat.setOnApplyWindowInsetsListener(webView) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val cutout = insets.getInsets(WindowInsetsCompat.Type.displayCutout())
@@ -149,11 +153,21 @@ class MainActivity : AppCompatActivity() {
                 val dp = px / density
                 return if (dp == dp.toInt().toFloat()) dp.toInt().toString() else "%.2f".format(dp)
             }
+            fun toDpF(px: Int): Float = px / density
+            val imeDp = toDpF(insets.getInsets(WindowInsetsCompat.Type.ime()).bottom)
+            val imeStr = if (imeDp == imeDp.toInt().toFloat()) imeDp.toInt().toString() else "%.2f".format(imeDp)
+            val prevStr = if (lastImeDp == lastImeDp.toInt().toFloat()) lastImeDp.toInt().toString() else "%.2f".format(lastImeDp)
             val js = "document.documentElement.style.setProperty('--sat','${toDp(top)}px');" +
                 "document.documentElement.style.setProperty('--sab','${toDp(bottom)}px');" +
                 "document.documentElement.style.setProperty('--sal','${toDp(left)}px');" +
-                "document.documentElement.style.setProperty('--sar','${toDp(right)}px');"
+                "document.documentElement.style.setProperty('--sar','${toDp(right)}px');" +
+                "window.__nativeKb=$imeStr;" +
+                "(function(){var kb=$imeStr,prev=$prevStr;" +
+                "if(kb>80){var r=document.querySelector('.row.editing');if(r&&window.keepEditVisible)keepEditVisible(r);}" +
+                "else if(prev>80){var l=document.getElementById('tList');if(l)l.style.paddingBottom='';" +
+                "var ta=document.querySelector('.inp');if(ta)ta.blur();}})();"
             webView.evaluateJavascript(js, null)
+            lastImeDp = imeDp
             insets
         }
     }

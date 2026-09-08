@@ -793,34 +793,49 @@ function checkMultiline(el){el.classList.toggle('ml',el.offsetHeight>56)}
 /* Keep the row being edited visible above the keyboard. The last rows have
    almost nothing below them, so #tList can't scroll far enough to lift them
    above the keyboard — grow its bottom padding by the keyboard height first,
-   then scroll. The top bars are position:sticky so they stay pinned. */
+   then scroll. Keyboard height comes from the native __nativeKb signal (works
+   on every WebView) with visualViewport/layout fallbacks. The top bars are
+   position:sticky so they stay pinned. */
 if(window.visualViewport&&!window.__baseVH)window.__baseVH=window.visualViewport.height;
+if(!window.__baseIH)window.__baseIH=window.innerHeight||document.documentElement.clientHeight||0;
+if(window.__nativeKb===undefined)window.__nativeKb=0;
 function kbHeight(){
-  if(!window.visualViewport||!window.__baseVH)return 0;
-  return window.__baseVH-window.visualViewport.height;
+  var kb=window.__nativeKb||0;
+  if(window.visualViewport&&window.__baseVH)kb=Math.max(kb,window.__baseVH-window.visualViewport.height);
+  return kb;
+}
+function layoutResized(){
+  var b=window.__baseIH||0,cur=window.innerHeight||document.documentElement.clientHeight||0;
+  return b>0&&cur>0&&(b-cur>80);
 }
 function keepEditVisible(row){
   if(!row||!row.scrollIntoView)return;
   function scroll(){
     try{
-      /* Make room first: without padding below, the bottom rows physically
-         cannot scroll above the keyboard. */
       var kb=kbHeight();
       var list=document.getElementById('tList');
-      if(list&&kb>80){list.style.paddingBottom=(kb+12)+'px';}
+      /* Overlay case only: when the window itself resized (adjustResize),
+         the list already ends above the keyboard — padding would just add a
+         gap. When the keyboard overlays, padding creates the scroll room. */
+      if(list){
+        if(kb>80&&!layoutResized()){list.style.paddingBottom=(kb+12)+'px';}
+        else if(!kb||kb<=80){/* keep existing padding until close handling */}
+      }
       row.scrollIntoView({block:'nearest'});
-      /* Layout-resize case: make sure the row is inside #tList's visible box. */
+      /* Make sure the row is inside #tList's visible box. */
       if(list){
         var lr=list.getBoundingClientRect();
         var rr=row.getBoundingClientRect();
         if(rr.bottom>lr.bottom-12){list.scrollTop+=(rr.bottom-(lr.bottom-12));}
         else if(rr.top<lr.top+4){list.scrollTop-=(lr.top+4-rr.top);}
       }
-      /* Overlay case (keyboard covers content without resizing layout):
-         lift the row above the keyboard using the visual viewport. */
-      if(window.visualViewport&&kb>80){
+      /* Overlay lift: visible height is layout minus keyboard (or the shrunk
+         visual viewport when it fires). */
+      if(kb>80&&!layoutResized()){
+        var layoutH=window.innerHeight||document.documentElement.clientHeight||0;
+        var vvH=window.visualViewport?window.visualViewport.height:layoutH;
+        var visibleBottom=Math.min(vvH,layoutH-kb)-12;
         var r=row.getBoundingClientRect();
-        var visibleBottom=window.visualViewport.height-12;
         if(r.bottom>visibleBottom){
           var l2=document.getElementById('tList');
           if(l2)l2.scrollTop+=(r.bottom-visibleBottom);
@@ -1036,20 +1051,29 @@ function startEdit(id){
 }
 document.addEventListener('mousedown',e=>{const txt=e.target.closest('.txt');if(txt){const r=txt.closest('.row[data-id]');if(r)pendingId=r.dataset.id}},true);
 document.addEventListener('touchstart',e=>{const txt=e.target.closest('.txt');if(txt){const r=txt.closest('.row[data-id]');if(r)pendingId=r.dataset.id}},{passive:true,capture:true});
+/* Window resize (adjustResize path on older Android): the layout itself
+   shrank, so re-scroll the edited row into the smaller list. */
+window.addEventListener('resize',()=>{
+  var cur=window.innerHeight||0;
+  if(cur>window.__baseIH)window.__baseIH=cur;
+  if(editId){var row=document.querySelector('.row[data-id="'+editId+'"]');if(row)setTimeout(()=>keepEditVisible(row),120)}
+});
 if(window.visualViewport){
   let prevH=window.visualViewport.height;
   if(!window.__baseVH)window.__baseVH=window.visualViewport.height;
   window.visualViewport.addEventListener('resize',()=>{
     const h=window.visualViewport.height;
     if(h>window.__baseVH)window.__baseVH=h;
-    const kb=window.__baseVH-h;
+    const kb=Math.max(window.__baseVH-h,window.__nativeKb||0);
     const list=document.getElementById('tList');
-    if(kb>80){
+    if(kb>80&&!layoutResized()){
       if(list)list.style.paddingBottom=(kb+12)+'px';
       if(editId){const row=document.querySelector('.row[data-id="'+editId+'"]');if(row)setTimeout(()=>keepEditVisible(row),120)}
-    }else{
+    }else if(kb<=80){
       if(list&&list.style.paddingBottom)list.style.paddingBottom='';
       if(h>prevH+80&&editId){const ta=document.querySelector('.inp');if(ta)ta.blur()}
+    }else if(editId){
+      const row=document.querySelector('.row[data-id="'+editId+'"]');if(row)setTimeout(()=>keepEditVisible(row),120)
     }
     prevH=h});
 }
