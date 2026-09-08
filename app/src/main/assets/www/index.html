@@ -728,7 +728,7 @@ function t(key,...args){
 let tasks=[],archived=[];
 let editId=null,pendingId=null,saveTimer=null;
 let currentView='main';
-let isSelecting=false,selectedIds=new Set(),longPressTimer=null,selectModeEnterTime=0,suppressSelectClick=false,lastTouchEnd=0;
+let isSelecting=false,selectedIds=new Set(),longPressTimer=null,selectModeEnterTime=0,suppressSelectClick=false,lastTouchEnd=0,lastRowTouchStart=0;
 let exportScope='todos',exportFmt='text',importDest='auto';
 let font='sys',theme='slate',fontSize=16,radius=10,haptics=true;
 let lang=window._preloadLang||'en';
@@ -987,10 +987,20 @@ function makeRow(task){
   row.addEventListener('click',e=>{if(suppressSelectClick){suppressSelectClick=false;return}if(Date.now()-selectModeEnterTime<300)return;if(isSelecting)toggleSelect(task.id)});
   row.querySelector('.chk').addEventListener('click',e=>{if(Date.now()-selectModeEnterTime<300)return;if(!isSelecting){e.stopPropagation();doArchive(task.id,row)}});
   row.querySelector('.txt').addEventListener('click',e=>{if(Date.now()-selectModeEnterTime<300)return;if(!isSelecting){e.stopPropagation();startEdit(task.id)}});
+  // System long-press fallback: if the WebView takes over the gesture for
+  // its own long-press handling, our timer dies with it. The context-menu
+  // signal that follows still tells us the user held this row — select it.
+  row.addEventListener('contextmenu',e=>{
+    if(isSelecting){e.preventDefault();return}
+    if(Date.now()-lastRowTouchStart>2000)return; // genuine mouse right-click: leave alone
+    e.preventDefault();
+    selectModeEnterTime=Date.now();enterSelectMode(task.id);
+  });
   // Touch slop: some screens emit tiny touchmove jitter with a perfectly
   // still finger — only treat it as a scroll/drag past ~12px.
   let lpX=0,lpY=0;
   row.addEventListener('touchstart',e=>{
+    lastRowTouchStart=Date.now();
     if(isSelecting){suppressSelectClick=false;return}
     if(e.target.closest('.dh')||row.classList.contains('editing'))return;
     const th=e.touches&&e.touches[0];
