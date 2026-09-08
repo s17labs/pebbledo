@@ -231,7 +231,14 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
 /* Keyboard-open state: pin the import sheet to the top of the visible area
    so it never slides behind the keyboard while typing. Toggled via fitImportDlg(). */
 #ovImport.kb{align-items:flex-start;padding-top:12px}
-#ovImport.kb .dlg{margin:0}
+#ovImport.kb .dlg{margin:0;padding:20px}
+/* Compact mode while the keyboard is open: tighten paddings/gaps and shrink
+   the text box so the whole sheet (through the Import button) fits above
+   the keyboard with no dialog scrolling. Full size returns on blur. */
+#ovImport.kb .dlg-h{margin-bottom:12px}
+#ovImport.kb .export-step{gap:10px}
+#ovImport.kb .export-choice{padding:10px 14px}
+#ovImport.kb #importText{min-height:80px;max-height:140px}
 
 .ab{display:flex;flex-direction:column;align-items:center;gap:10px}
 .ab-icon{width:68px;height:68px;border-radius:18px;background-color:var(--fill);display:flex;align-items:center;justify-content:center;margin-bottom:2px;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:background-color .4s ease;}
