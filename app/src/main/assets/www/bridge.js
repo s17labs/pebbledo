@@ -129,6 +129,29 @@ const NativeBridge = (() => {
     }
 
     // ─────────────────────────────────────────────────
+    // Clipboard
+    // ─────────────────────────────────────────────────
+
+    /**
+     * Read plain text from the system clipboard.
+     * Inside the WebView the async clipboard API is blocked, so this goes
+     * through the native ClipboardManager (no permission needed).
+     * @returns {string} Clipboard text, or '' when empty/unreadable.
+     *   Returns null outside the native shell so callers can fall back to
+     *   navigator.clipboard.
+     */
+    function getClipboardText() {
+        if (isNative()) {
+            try {
+                return window.Native.getClipboardText() || '';
+            } catch {
+                return '';
+            }
+        }
+        return null;
+    }
+
+    // ─────────────────────────────────────────────────
     // Sharing
     // ─────────────────────────────────────────────────
 
@@ -179,6 +202,7 @@ const NativeBridge = (() => {
         getDeviceInfo,
         openUrl,
         vibrate,
+        getClipboardText,
         share,
         emit,
     };

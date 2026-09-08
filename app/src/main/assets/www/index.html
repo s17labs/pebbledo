@@ -29,7 +29,7 @@
   }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
+html,body{height:100%;overscroll-behavior:none}
 button{font-family:inherit;cursor:pointer}
 *:focus,*:focus-visible,*:focus-within{outline:none!important;-webkit-tap-highlight-color:transparent}
 
@@ -64,6 +64,10 @@ body{
   -webkit-tap-highlight-color:transparent;
   transition:background-color .4s ease, color .4s ease, opacity .18s ease;
   overflow:hidden;user-select:none;-webkit-user-select:none;
+  /* The app never needs document-level scroll (lists/dialogs scroll
+     internally) — pin the root so drags can't pan the whole WebView,
+     e.g. while typing with the keyboard open. */
+  position:fixed;left:0;top:0;right:0;bottom:0;width:100%;
   /* Launch gate (see BOOT): hidden until safe-area vars arrive or timeout. */
   opacity:0;
 }
@@ -90,7 +94,7 @@ textarea,input{user-select:text;-webkit-user-select:text;accent-color:var(--fill
 .view{display:none;flex-direction:column;flex:1;overflow:hidden;position:relative}
 .view.active{display:flex}
 
-.tl{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 0 12px;position:relative;}
+.tl{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:4px 0 12px;position:relative;}
 .tl::-webkit-scrollbar{display:none}
 
 .row{display:flex;align-items:center;margin:1px 8px;border-radius:var(--r);padding:0 4px 0 0;position:relative;scroll-margin:4px 0 10px;background-color:transparent;transition:background-color .2s,border-radius .25s;-webkit-tap-highlight-color:transparent;}
@@ -143,7 +147,7 @@ body.selecting .dh{opacity:0;pointer-events:none}
 .ov{position:fixed;inset:0;background-color:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:1000;padding:24px;opacity:0;pointer-events:none;transition:opacity .22s;}
 .ov.open{opacity:1;pointer-events:all}
 .ov.open .dlg{transform:translateY(0) scale(1)}
-.dlg{background-color:var(--nb);border-radius:min(calc(var(--r) + 6px), 22px);padding:24px;width:100%;max-width:360px;position:relative;box-shadow:0 24px 64px rgba(0,0,0,.5);transform:translateY(16px) scale(.96);transition:transform .25s cubic-bezier(.22,1,.36,1),background-color .4s ease;max-height:90vh;overflow-y:auto;will-change:transform;}
+.dlg{background-color:var(--nb);border-radius:min(calc(var(--r) + 6px), 22px);padding:24px;width:100%;max-width:360px;position:relative;box-shadow:0 24px 64px rgba(0,0,0,.5);transform:translateY(16px) scale(.96);transition:transform .25s cubic-bezier(.22,1,.36,1),background-color .4s ease;max-height:90vh;overflow-y:auto;overscroll-behavior:contain;will-change:transform;}
 .dlg::-webkit-scrollbar{display:none}
 .dlg-x{
   position:absolute;top:20px;right:20px;
@@ -228,6 +232,24 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
 .export-success span{font-size:13px;color:var(--muted);transition:color .4s ease;}
 .export-done-btn{width:100%;padding:11px;background-color:var(--fill);border:none;border-radius:var(--r);font-size:14px;font-weight:600;color:#fff;transition:background-color .3s ease;margin-top:4px;}
 .export-done-btn:active{opacity:.7}
+
+/* ── Import ─────────────────────────────────────────────────── */
+#importText{width:100%;min-height:120px;max-height:220px;background-color:var(--sel);border:1.5px solid var(--div);border-radius:var(--r);color:var(--tx);font-size:13px;font-family:inherit;padding:10px 12px;resize:none;line-height:1.5;overscroll-behavior:contain;user-select:text;-webkit-user-select:text;}
+#importText:focus{border-color:var(--fill)}
+#importText::placeholder{color:var(--muted)}
+.imp-btn-row{display:flex;gap:8px}
+.imp-btn-row .export-back-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px}
+/* Keyboard-open state: pin the import sheet to the top of the visible area
+   so it never slides behind the keyboard while typing. Toggled via fitImportDlg(). */
+#ovImport.kb{align-items:flex-start;padding-top:12px}
+#ovImport.kb .dlg{margin:0;padding:20px}
+/* Compact mode while the keyboard is open: tighten paddings/gaps and shrink
+   the text box so the whole sheet (through the Import button) fits above
+   the keyboard with no dialog scrolling. Full size returns on blur. */
+#ovImport.kb .dlg-h{margin-bottom:12px}
+#ovImport.kb .export-step{gap:10px}
+#ovImport.kb .export-choice{padding:10px 14px}
+#ovImport.kb #importText{min-height:80px;max-height:140px}
 
 .ab{display:flex;flex-direction:column;align-items:center;gap:10px}
 .ab-icon{width:68px;height:68px;border-radius:18px;background-color:var(--fill);display:flex;align-items:center;justify-content:center;margin-bottom:2px;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:background-color .4s ease;}
@@ -341,6 +363,7 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
   </div>
   <span class="sel-count" id="selCount">0 selected</span>
   <div class="sel-actions">
+    <button class="nb-btn" id="btnSelCopy"><i class="fa-solid fa-copy"></i></button>
     <button class="nb-btn" id="btnSelArchive"><i class="fa-solid fa-box-archive"></i></button>
     <button class="nb-btn" id="btnSelDelete"><i class="fa-solid fa-trash"></i></button>
   </div>
@@ -406,6 +429,7 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
     <div class="ss-divider"></div>
     <div class="ss" style="display:flex;flex-direction:column;gap:10px">
       <button class="action-row" id="btnExport"><i class="fa-solid fa-arrow-up-from-bracket"></i><span id="ssExport">Export Todos</span></button>
+      <button class="action-row" id="btnImport"><i class="fa-solid fa-arrow-right-to-bracket fa-rotate-90"></i><span id="ssImport">Import Todos</span></button>
       <button class="action-row" id="btnAbout"><i class="fa-solid fa-circle-info"></i><span id="ssAbout">About PebbleDo</span></button>
     </div>
   </div>
@@ -473,6 +497,54 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
       <p id="expCopiedText">Copied!</p>
       <span id="expSuccessDetail"></span>
       <button class="export-done-btn" id="expDone">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT -->
+<div class="ov" id="ovImport">
+  <div class="dlg">
+    <button class="dlg-x" id="xImport"><i class="fa-solid fa-xmark"></i></button>
+    <p class="dlg-h" id="importTitle">Import</p>
+    <div class="export-step active" id="impStep1">
+      <p class="export-step-label" id="impPasteLabel">Paste exported text</p>
+      <textarea id="importText" rows="5" spellcheck="false"></textarea>
+      <div class="imp-btn-row">
+        <button class="export-back-btn" id="impPasteBtn"><i class="fa-solid fa-clipboard" style="font-size:12px"></i> <span id="impPasteText">Paste</span></button>
+      </div>
+      <p class="export-step-label" id="impDestLabel">Import to</p>
+      <div class="export-choice-grid">
+        <div class="export-choice selected" data-dest="auto">
+          <i class="fa-solid fa-wand-magic-sparkles"></i>
+          <div class="export-choice-text">
+            <div class="export-choice-label" id="impAutoLabel">Auto-detect</div>
+            <div class="export-choice-sub"   id="impAutoSub">Split todos &amp; archive from text</div>
+          </div>
+        </div>
+        <div class="export-choice" data-dest="todos">
+          <i class="fa-solid fa-list-check"></i>
+          <div class="export-choice-text">
+            <div class="export-choice-label" id="impTodosLabel">Todos only</div>
+            <div class="export-choice-sub"   id="impTodosSub">Add everything as active todos</div>
+          </div>
+        </div>
+        <div class="export-choice" data-dest="archive">
+          <i class="fa-solid fa-box-archive"></i>
+          <div class="export-choice-text">
+            <div class="export-choice-label" id="impArchLabel">Archive only</div>
+            <div class="export-choice-sub"   id="impArchSub">Add everything as archived</div>
+          </div>
+        </div>
+      </div>
+      <div class="export-step-nav">
+        <button class="export-next-btn" id="impDo"><i class="fa-solid fa-arrow-right-to-bracket fa-rotate-90" style="font-size:13px"></i> <span id="impDoText">Import</span></button>
+      </div>
+    </div>
+    <div class="export-success" id="impSuccess">
+      <div class="export-success-icon"><i class="fa-solid fa-check"></i></div>
+      <p id="impDoneText">Imported!</p>
+      <span id="impSuccessDetail"></span>
+      <button class="export-done-btn" id="impDone">Done</button>
     </div>
   </div>
 </div>
@@ -581,7 +653,7 @@ const T = {
     nSelected:n=>n===1?'1 selected':`${n} selected`,
     settings:'Settings',ssTheme:'Theme',ssFont:'Font',ssFontSize:'Font Size',
     ssRadius:'Corner Radius',ssHaptics:'Haptic Feedback',ssLang:'Language',
-    ssExport:'Export Todos',ssAbout:'About PebbleDo',
+    ssExport:'Export Todos',ssImport:'Import Todos',ssAbout:'About PebbleDo',
     exportTitle:'Export',whatToExport:'What to export',
     todosLabel:'Todos only',todosSub:'Your active to-do list',
     archLabel:'Archive only',archSub:'Completed tasks',
@@ -593,6 +665,15 @@ const T = {
     copyFail:'Couldn\u2019t copy',exportEmpty:'Nothing to export',
     scopeTodos:'todos',scopeArchive:'archive',scopeAll:'todos + archive',
     fmtText:'plain text',fmtMd:'Markdown',
+    importTitle:'Import',impPasteLabel:'Paste exported text',
+    impPastePh:'Paste text here\u2026',impPasteBtn:'Paste',
+    impDestLabel:'Import to',impAutoLabel:'Auto-detect',
+    impAutoSub:'Split todos & archive from text',
+    impTodosSub:'Add everything as active todos',
+    impArchSub:'Add everything as archived',
+    impBtn:'Import',imported:'Imported!',impDone:'Done',
+    importEmpty:'Nothing to import',pasteFail:'Couldn\u2019t read clipboard',
+    selCopyTitle:'Copy selected',
     clearTitle:'Clear Archive',clearMsg:"Delete all archived todos permanently? This can\u2019t be undone.",
     cancel:'Cancel',clearAll:'Clear All',
     delSelTitle:'Delete Selected',
@@ -611,7 +692,7 @@ const T = {
     nSelected:n=>n===1?'1 vybraná':(n>=2&&n<=4?`${n} vybrané`:`${n} vybraných`),
     settings:'Nastavenia',ssTheme:'Téma',ssFont:'Písmo',ssFontSize:'Veľkosť písma',
     ssRadius:'Zaoblenie rohov',ssHaptics:'Haptická odozva',ssLang:'Jazyk',
-    ssExport:'Exportovať úlohy',ssAbout:'O PebbleDo',
+    ssExport:'Exportovať úlohy',ssImport:'Importovať úlohy',ssAbout:'O PebbleDo',
     exportTitle:'Export',whatToExport:'Čo exportovať',
     todosLabel:'Len úlohy',todosSub:'Tvoj aktívny zoznam úloh',
     archLabel:'Len archív',archSub:'Dokončené úlohy',
@@ -623,6 +704,15 @@ const T = {
     copyFail:'Kopírovanie sa nepodarilo',exportEmpty:'Nič na exportovanie',
     scopeTodos:'úlohy',scopeArchive:'archív',scopeAll:'úlohy + archív',
     fmtText:'obyčajný text',fmtMd:'Markdown',
+    importTitle:'Import',impPasteLabel:'Prilep exportovaný text',
+    impPastePh:'Prilep text sem\u2026',impPasteBtn:'Prilepiť',
+    impDestLabel:'Kam importovať',impAutoLabel:'Rozpoznať automaticky',
+    impAutoSub:'Rozdelí úlohy a archív podľa textu',
+    impTodosSub:'Pridať všetko ako aktívne úlohy',
+    impArchSub:'Pridať všetko ako archivované',
+    impBtn:'Importovať',imported:'Importované!',impDone:'Hotovo',
+    importEmpty:'Nič na importovanie',pasteFail:'Schránku sa nepodarilo prečítať',
+    selCopyTitle:'Kopírovať vybrané',
     clearTitle:'Vymazať archív',clearMsg:'Natrvalo vymazať všetky archivované úlohy? Toto sa nedá vrátiť.',
     cancel:'Zrušiť',clearAll:'Vymazať všetko',
     delSelTitle:'Vymazať vybrané',
@@ -650,8 +740,8 @@ function t(key,...args){
 let tasks=[],archived=[];
 let editId=null,pendingId=null,saveTimer=null;
 let currentView='main';
-let isSelecting=false,selectedIds=new Set(),longPressTimer=null,selectModeEnterTime=0;
-let exportScope='todos',exportFmt='text';
+let isSelecting=false,selectedIds=new Set(),longPressTimer=null,selectModeEnterTime=0,suppressSelectClick=false,lastTouchEnd=0,lastRowTouchStart=0;
+let exportScope='todos',exportFmt='text',importDest='auto';
 let font='sys',theme='slate',fontSize=16,radius=10,haptics=true;
 let lang=window._preloadLang||'en';
 
@@ -732,6 +822,7 @@ function applyLang(){
   document.getElementById('ssHaptics').textContent=t('ssHaptics');
   document.getElementById('ssLang').textContent=t('ssLang');
   document.getElementById('ssExport').textContent=t('ssExport');
+  document.getElementById('ssImport').textContent=t('ssImport');
   document.getElementById('ssAbout').textContent=t('ssAbout');
   document.querySelectorAll('#settingsLangBtns .lang-btn').forEach(b=>b.classList.toggle('on',b.dataset.l===lang));
   document.querySelectorAll('#obLangBtns .ob-lang-btn').forEach(b=>b.classList.toggle('on',b.dataset.l===lang));
@@ -753,6 +844,21 @@ function applyLang(){
   document.getElementById('expCopyText').textContent=t('copyBtn');
   document.getElementById('expCopiedText').textContent=t('copied');
   document.getElementById('expDone').textContent=t('done');
+  document.getElementById('btnSelCopy').title=t('selCopyTitle');
+  document.getElementById('importTitle').textContent=t('importTitle');
+  document.getElementById('impPasteLabel').textContent=t('impPasteLabel');
+  document.getElementById('importText').placeholder=t('impPastePh');
+  document.getElementById('impPasteText').textContent=t('impPasteBtn');
+  document.getElementById('impDestLabel').textContent=t('impDestLabel');
+  document.getElementById('impAutoLabel').textContent=t('impAutoLabel');
+  document.getElementById('impAutoSub').textContent=t('impAutoSub');
+  document.getElementById('impTodosLabel').textContent=t('todosLabel');
+  document.getElementById('impTodosSub').textContent=t('impTodosSub');
+  document.getElementById('impArchLabel').textContent=t('archLabel');
+  document.getElementById('impArchSub').textContent=t('impArchSub');
+  document.getElementById('impDoText').textContent=t('impBtn');
+  document.getElementById('impDoneText').textContent=t('imported');
+  document.getElementById('impDone').textContent=t('impDone');
   document.getElementById('clearTitle').textContent=t('clearTitle');
   document.getElementById('clearMsg').textContent=t('clearMsg');
   document.getElementById('btnCancelClear').textContent=t('cancel');
@@ -887,15 +993,51 @@ function makeRow(task){
   const row=document.createElement('div');
   row.className='row';row.dataset.id=task.id;
   row.innerHTML=`<div class="chk"><div class="circle"><i class="fa-solid fa-check"></i></div></div><span class="txt">${esc(task.text)}</span><div class="dh"><i class="fa-solid fa-grip-lines"></i></div>`;
-  row.addEventListener('click',e=>{if(Date.now()-selectModeEnterTime<300)return;if(isSelecting)toggleSelect(task.id)});
+  row.addEventListener('click',e=>{if(suppressSelectClick){suppressSelectClick=false;return}if(Date.now()-selectModeEnterTime<300)return;if(isSelecting)toggleSelect(task.id)});
   row.querySelector('.chk').addEventListener('click',e=>{if(Date.now()-selectModeEnterTime<300)return;if(!isSelecting){e.stopPropagation();doArchive(task.id,row)}});
   row.querySelector('.txt').addEventListener('click',e=>{if(Date.now()-selectModeEnterTime<300)return;if(!isSelecting){e.stopPropagation();startEdit(task.id)}});
+  // System long-press fallback: if the WebView takes over the gesture for
+  // its own long-press handling, our timer dies with it. The context-menu
+  // signal that follows still tells us the user held this row — select it.
+  row.addEventListener('contextmenu',e=>{
+    if(isSelecting){e.preventDefault();return}
+    if(Date.now()-lastRowTouchStart>2000)return; // genuine mouse right-click: leave alone
+    e.preventDefault();
+    selectModeEnterTime=Date.now();enterSelectMode(task.id);
+  });
+  // Touch slop: some screens emit tiny touchmove jitter with a perfectly
+  // still finger — only treat it as a scroll/drag past ~12px.
+  let lpX=0,lpY=0;
   row.addEventListener('touchstart',e=>{
-    if(isSelecting||e.target.closest('.dh')||row.classList.contains('editing'))return;
+    lastRowTouchStart=Date.now();
+    if(isSelecting){suppressSelectClick=false;return}
+    if(e.target.closest('.dh')||row.classList.contains('editing'))return;
+    const th=e.touches&&e.touches[0];
+    lpX=th?th.clientX:0;lpY=th?th.clientY:0;
     longPressTimer=setTimeout(()=>{vibrate([30,20,40]);selectModeEnterTime=Date.now();enterSelectMode(task.id)},500);
   },{passive:true});
-  row.addEventListener('touchend',()=>clearTimeout(longPressTimer));
-  row.addEventListener('touchmove',()=>clearTimeout(longPressTimer));
+  row.addEventListener('touchend',()=>{lastTouchEnd=Date.now();clearTimeout(longPressTimer)});
+  row.addEventListener('touchcancel',()=>clearTimeout(longPressTimer));
+  row.addEventListener('touchmove',e=>{
+    const th=e.touches&&e.touches[0];
+    if(th&&Math.hypot(th.clientX-lpX,th.clientY-lpY)<=12)return;
+    clearTimeout(longPressTimer);
+  });
+  // Mouse / desktop long-press: press-and-hold left button to multi-select.
+  row.addEventListener('mousedown',e=>{
+    if(e.button!==0)return;
+    // Compatibility mouse events fired after a touch are ghosts, not real
+    // presses — they arrive after touchend but before the release click, so
+    // they must not disarm anything the touch gesture set up.
+    if((e.sourceCapabilities&&e.sourceCapabilities.firesTouchEvents)||Date.now()-lastTouchEnd<500)return;
+    if(isSelecting){suppressSelectClick=false;return}
+    if(e.target.closest('.dh')||row.classList.contains('editing'))return;
+    clearTimeout(longPressTimer);
+    longPressTimer=setTimeout(()=>{vibrate([30,20,40]);selectModeEnterTime=Date.now();enterSelectMode(task.id)},500);
+  });
+  row.addEventListener('mouseup',()=>clearTimeout(longPressTimer));
+  row.addEventListener('mouseleave',()=>clearTimeout(longPressTimer));
+  row.addEventListener('mousemove',()=>clearTimeout(longPressTimer));
   const dh=row.querySelector('.dh');
   dh.addEventListener('touchstart',e=>initDrag(e,task.id),{passive:false});
   dh.addEventListener('mousedown',e=>initDrag(e,task.id));
@@ -917,13 +1059,16 @@ function makeEmpty(cls,anim){
 function enterSelectMode(firstId){
   if(editId)commitEdit(editId);
   isSelecting=true;selectedIds=new Set([firstId]);
+  // Swallow the release-click of the long-press gesture itself — otherwise
+  // it instantly toggles the just-selected row back off.
+  suppressSelectClick=true;
   document.body.classList.add('selecting');
   document.getElementById('mainNb').style.display='none';
   document.getElementById('selNb').classList.add('active');
   updateSelUI();render(false);
 }
 function exitSelectMode(){
-  isSelecting=false;selectedIds.clear();
+  isSelecting=false;selectedIds.clear();suppressSelectClick=false;
   document.body.classList.remove('selecting');
   document.getElementById('mainNb').style.display='';
   document.getElementById('selNb').classList.remove('active');
@@ -947,6 +1092,28 @@ function deleteSelected(){
   if(!selectedIds.size)return;
   document.getElementById('delConfirmMsg').textContent=t('delMsg',selectedIds.size);
   openDlg('ovConfirmDel');
+}
+function copyTextToClipboard(text,onOk,onFail){
+  function legacy(){
+    const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;opacity:0;top:0;left:0';document.body.appendChild(ta);ta.select();
+    let ok=false;try{ok=document.execCommand('copy')}catch(e){}
+    document.body.removeChild(ta);
+    ok?onOk():onFail();
+  }
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(onOk).catch(legacy);
+  }else{
+    legacy();
+  }
+}
+function copySelected(){
+  if(!selectedIds.size)return;
+  const lines=[];
+  tasks.forEach(t_=>{if(selectedIds.has(t_.id)&&t_.text.trim())lines.push('\u2022 '+flatten(t_.text,' / '))});
+  if(!lines.length){vibrate(30);toast(t('exportEmpty'));return}
+  copyTextToClipboard(lines.join('\n'),
+    ()=>{vibrate(40);toast(t('copied'))},
+    ()=>{vibrate([30,20,30]);toast(t('copyFail'))});
 }
 
 /* ════════════════════════════════════════════
@@ -1239,6 +1406,122 @@ document.getElementById('expCopy').addEventListener('click',()=>{
 document.getElementById('expDone').addEventListener('click',()=>closeDlg('ovExport'));
 
 /* ════════════════════════════════════════════
+   IMPORT — parses back everything export produces
+   plain text (• one per line, optional "todos:"/"archive:" sections)
+   + markdown (- [ ] / - [x], optional "## todos"/"## archive" sections)
+════════════════════════════════════════════ */
+function normHeader(s){
+  try{s=String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}catch(e){s=String(s).toLowerCase()}
+  return s.replace(/^[\s#>\-*\u2022]+/,'').replace(/[:\s]+$/,'').trim();
+}
+function headerSection(line){
+  const raw=String(line).trim();if(!raw)return null;
+  const hasHash=/^#+/.test(raw),hasColon=/:\s*$/.test(raw);
+  const h=normHeader(raw);if(!h||h.length>24)return null;
+  // "todos + archive" scope summary (shown in the export success line) is
+  // never a task — skip it without changing the current section.
+  if(h.indexOf('+')>-1){
+    if(h.indexOf('todo')>-1||h.indexOf('uloh')>-1||h.indexOf('archiv')>-1||h.indexOf('archive')>-1)return 'ignore';
+    return null;
+  }
+  const isArch=(h==='archive'||h==='archiv'||h==='done'||h==='completed'||h==='hotovo'||h.indexOf('archiv')===0||h.indexOf('archive')===0);
+  const isTodo=(h==='todos'||h==='todo'||h==='tasks'||h==='task'||h==='ulohy'||h==='uloha'||h.indexOf('todo')===0||h.indexOf('uloh')===0);
+  if(!isArch&&!isTodo)return null;
+  // Export headers always carry ## or a trailing colon; bare single-word
+  // headers are also accepted, anything longer must carry a marker so a
+  // task like "Todo buy milk" is never swallowed as a section.
+  if(hasHash||hasColon)return isArch?'archive':'todos';
+  if(h==='archive'||h==='archiv'||h==='todos'||h==='todo'||h==='ulohy')return isArch?'archive':'todos';
+  return null;
+}
+function parseImportText(raw){
+  const todos=[],archived=[],ordered=[];
+  let section=null,last=null;
+  function push(text,done){
+    text=String(text).trim();if(!text)return;
+    const rec={text,done:!!done};ordered.push(rec);
+    if(rec.done)archived.push(text);else todos.push(text);
+    last=rec;
+  }
+  String(raw||'').split(/\r?\n/).forEach(line=>{
+    if(!line||!line.trim()){last=null;return}
+    // Markdown multiline continuation from export ("- [ ] a\n  b").
+    if(last&&/^\s{2,}\S/.test(line)){
+      last.text+='\n'+line.trim();
+      if(last.done)archived[archived.length-1]=last.text;else todos[todos.length-1]=last.text;
+      return;
+    }
+    const trimmed=line.trim();
+    const sec=headerSection(trimmed);
+    if(sec==='ignore'){last=null;return}
+    if(sec){section=sec;last=null;return}
+    let m=trimmed.match(/^(?:[-*\u2022]\s*)?\[([ xX])\]\s*([\s\S]*)$/);
+    if(m){push(m[2]||'',m[1].toLowerCase()==='x');return}
+    let b=trimmed.match(/^[•\-\*–—]\s+([\s\S]*)$/);
+    if(b){push(b[1]||'',section==='archive');return}
+    let n=trimmed.match(/^\d+[.\)]\s+([\s\S]*)$/);
+    if(n){push(n[1]||'',section==='archive');return}
+    push(trimmed,section==='archive');
+  });
+  return{todos,archived,items:ordered};
+}
+function resetImport(){
+  importDest='auto';
+  document.querySelectorAll('#ovImport .export-choice').forEach((el,i)=>el.classList.toggle('selected',i===0));
+  document.getElementById('impStep1').classList.add('active');
+  document.getElementById('impSuccess').classList.remove('active');
+  document.getElementById('importTitle').textContent=t('importTitle');
+  document.getElementById('importText').value='';
+  unfitImportDlg();
+}
+/* Keep the import sheet pinned above the keyboard while typing: cap the
+   dialog to the visible area (same kbHeight/layoutResized pattern as the
+   todo-list keyboard lift) so there is nothing to scroll. On the
+   adjustResize path the window already shrank, so leave it alone. */
+function fitImportDlg(){
+  const ov=document.getElementById('ovImport'),dlg=ov&&ov.querySelector('.dlg');
+  if(!ov||!dlg)return;
+  const kb=kbHeight();
+  if(kb>80&&!layoutResized()&&ov.classList.contains('open')){
+    const layoutH=window.innerHeight||document.documentElement.clientHeight||0;
+    const vvH=window.visualViewport?window.visualViewport.height:layoutH;
+    const visible=Math.max(240,Math.min(vvH,layoutH-kb));
+    ov.classList.add('kb');
+    dlg.style.maxHeight=(visible-24)+'px';
+  }else unfitImportDlg();
+}
+function unfitImportDlg(){
+  const ov=document.getElementById('ovImport'),dlg=ov&&ov.querySelector('.dlg');
+  if(!ov||!dlg)return;
+  ov.classList.remove('kb');
+  dlg.style.maxHeight='';
+}
+function doImport(){
+  const raw=document.getElementById('importText').value||'';
+  const parsed=parseImportText(raw);
+  let toTodos=parsed.todos.slice(),toArch=parsed.archived.slice();
+  if(importDest==='todos'){toTodos=parsed.items.map(r=>r.text);toArch=[]}
+  else if(importDest==='archive'){toArch=parsed.items.map(r=>r.text);toTodos=[]}
+  const nT=toTodos.length,nA=toArch.length;
+  if(!nT&&!nA){vibrate(30);toast(t('importEmpty'));return}
+  toTodos.forEach(tx=>tasks.push({id:uid(),text:tx}));
+  toArch.forEach(tx=>archived.push({id:uid(),text:tx}));
+  save();render(false);
+  if(currentView==='arch')renderArch(true);
+  updateFab();updateHint();
+  document.getElementById('impStep1').classList.remove('active');
+  document.getElementById('impSuccess').classList.add('active');
+  document.getElementById('importTitle').textContent='';
+  document.getElementById('impDoneText').textContent=t('imported');
+  let detail='';
+  if(nT&&nA)detail=`${nT} ${t('scopeTodos')} \u00b7 ${nA} ${t('scopeArchive')}`;
+  else if(nT)detail=`${nT} ${t('scopeTodos')}`;
+  else detail=`${nA} ${t('scopeArchive')}`;
+  document.getElementById('impSuccessDetail').textContent=detail;
+  vibrate(40);
+}
+
+/* ════════════════════════════════════════════
    DIALOGS
 ════════════════════════════════════════════ */
 const dlgStack=[];
@@ -1277,6 +1560,43 @@ document.getElementById('btnExport').addEventListener('click',()=>{closeDlg('ovS
 document.getElementById('xExport').addEventListener('click',()=>closeDlg('ovExport'));
 document.getElementById('ovExport').addEventListener('click',e=>{if(e.target===document.getElementById('ovExport'))closeDlg('ovExport')});
 
+document.getElementById('btnImport').addEventListener('click',()=>{closeDlg('ovSet');resetImport();setTimeout(()=>openDlg('ovImport'),180)});
+document.getElementById('xImport').addEventListener('click',()=>closeDlg('ovImport'));
+document.getElementById('ovImport').addEventListener('click',e=>{if(e.target===document.getElementById('ovImport'))closeDlg('ovImport')});
+document.querySelector('#ovImport .export-choice-grid').addEventListener('click',e=>{const c=e.target.closest('.export-choice[data-dest]');if(!c)return;importDest=c.dataset.dest;document.querySelectorAll('#ovImport .export-choice').forEach(el=>el.classList.toggle('selected',el===c))});
+document.getElementById('impPasteBtn').addEventListener('click',()=>{
+  const box=document.getElementById('importText');
+  function pasteFailed(){
+    vibrate([30,20,30]);
+    toast(t('pasteFail'));
+    // Fall back to manual paste: focus the box so the user can long-press → Paste.
+    try{box.focus()}catch(e){}
+  }
+  // The WebView blocks the async clipboard API, so read through the native
+  // bridge instead (foreground clipboard read needs no permission).
+  if(hasNB()&&NativeBridge.isNative()){
+    let txt='';
+    try{txt=NativeBridge.getClipboardText()||''}catch(e){txt=''}
+    if(txt){box.value=txt;try{box.focus()}catch(e){}}
+    else pasteFailed();
+    return;
+  }
+  if(navigator.clipboard&&navigator.clipboard.readText){
+    navigator.clipboard.readText().then(txt=>{box.value=txt||'';try{box.focus()}catch(e){};if(!txt)pasteFailed()}).catch(pasteFailed);
+  }else pasteFailed();
+});
+document.getElementById('impDo').addEventListener('click',doImport);
+document.getElementById('impDone').addEventListener('click',()=>closeDlg('ovImport'));
+// Pin the sheet above the keyboard while typing in the import box; release on blur.
+(function(){
+  const box=document.getElementById('importText');
+  box.addEventListener('focus',()=>{setTimeout(fitImportDlg,120);setTimeout(fitImportDlg,400)});
+  box.addEventListener('blur',()=>unfitImportDlg());
+  if(window.visualViewport)window.visualViewport.addEventListener('resize',()=>{
+    if(document.activeElement===box)setTimeout(fitImportDlg,60);
+  });
+})();
+
 document.getElementById('btnAbout').addEventListener('click',()=>{closeDlg('ovSet');setTimeout(()=>openDlg('ovAbout'),180)});
 document.getElementById('xAbout').addEventListener('click',()=>closeDlg('ovAbout'));
 document.getElementById('ovAbout').addEventListener('click',e=>{if(e.target===document.getElementById('ovAbout'))closeDlg('ovAbout')});
@@ -1301,6 +1621,7 @@ document.getElementById('btnConfirmDel').addEventListener('click',()=>{
 
 document.getElementById('archFab').addEventListener('click',()=>openDlg('ovConfirm'));
 document.getElementById('btnSelCancel').addEventListener('click',()=>exitSelectMode());
+document.getElementById('btnSelCopy').addEventListener('click',()=>copySelected());
 document.getElementById('btnSelArchive').addEventListener('click',()=>archiveSelected());
 document.getElementById('btnSelDelete').addEventListener('click',()=>deleteSelected());
 
