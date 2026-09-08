@@ -40,12 +40,19 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var backCallback: OnBackPressedCallback
 
+    // Current theme background (int) + whether a web dialog is open. The
+    // native status/nav strips are painted from these so they dim together
+    // with the web dialog overlay (see setScrim).
+    private var themeBg: Int = Color.parseColor("#F0F2F5")
+    private var scrimOn: Boolean = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         // Restore the background saved from the web app's last theme so the
         // launch frame matches the selected theme — no default-theme flash.
         val startBg = loadSavedBackground()
+        themeBg = startBg
 
         // Draw behind system bars for edge-to-edge display.
         // Static safe areas are applied as container padding in setupEdgeToEdge(),
@@ -224,16 +231,41 @@ class MainActivity : AppCompatActivity() {
      */
     internal fun applyBackground(color: String) {
         try {
-            val c = Color.parseColor(color)
-            webView.setBackgroundColor(c)
-            rootContainer.setBackgroundColor(c)
-            window.setBackgroundDrawable(ColorDrawable(c))
+            themeBg = Color.parseColor(color)
             getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
                 .edit()
                 .putString(KEY_BACKGROUND, color)
                 .apply()
+            renderBackground()
         } catch (_: IllegalArgumentException) {
         }
+    }
+
+    /**
+     * Dim or undim the native status/nav strips while a web dialog is open.
+     * The web overlay (.ov) can't paint outside the WebView, so the shell dims
+     * its own background to the exact same value (see dimForScrim).
+     */
+    internal fun setScrim(on: Boolean) {
+        scrimOn = on
+        renderBackground()
+    }
+
+    private fun renderBackground() {
+        val c = if (scrimOn) dimForScrim(themeBg) else themeBg
+        webView.setBackgroundColor(c)
+        rootContainer.setBackgroundColor(c)
+        window.setBackgroundDrawable(ColorDrawable(c))
+    }
+
+    /** Match the web dialog overlay rgba(0,0,0,.6): out = src * (1 - .6). */
+    private fun dimForScrim(color: Int): Int {
+        val f = 0.4f
+        return Color.rgb(
+            ((color shr 16 and 0xFF) * f).toInt(),
+            ((color shr 8 and 0xFF) * f).toInt(),
+            ((color and 0xFF) * f).toInt()
+        )
     }
 
     /** Background color saved by the web app on a previous run (or the default). */

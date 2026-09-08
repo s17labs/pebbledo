@@ -159,6 +159,7 @@ class NativeBridge(private val activity: MainActivity) {
      * Handled events:
      *   - "exit" → exit the app (back button reached the root UI state)
      *   - "bg"   → update the WebView background to match the web theme
+     *   - "scrim" → dim/undim the native strips while a web dialog is open
      */
     @JavascriptInterface
     fun emit(event: String, payload: String) {
@@ -171,6 +172,10 @@ class NativeBridge(private val activity: MainActivity) {
                     if (color.isNotEmpty()) {
                         activity.runOnUiThread { activity.applyBackground(color) }
                     }
+                }
+                "scrim" -> {
+                    val on = data.optBoolean("on", false)
+                    activity.runOnUiThread { activity.setScrim(on) }
                 }
             }
         } catch (e: Exception) {
