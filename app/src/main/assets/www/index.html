@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>PebbleDo</title>
 <link rel="stylesheet" href="font-awesome.min.css">
 <style>
@@ -788,12 +788,30 @@ function toast(msg){
 }
 function checkMultiline(el){el.classList.toggle('ml',el.offsetHeight>56)}
 /* Keep the row being edited visible above the keyboard: scroll it into view
-   right away and once more after the keyboard has finished opening. The top
+   right away and again after the keyboard has finished opening (native IME
+   padding resizes the layout, but as a fallback also lift the row manually
+   when visualViewport shows the keyboard overlaying content). The top
    bars are position:sticky so they stay pinned while the list scrolls. */
 function keepEditVisible(row){
   if(!row||!row.scrollIntoView)return;
-  function scroll(){try{row.scrollIntoView({block:'nearest'})}catch(e){}}
-  requestAnimationFrame(scroll);setTimeout(scroll,350);
+  function scroll(){
+    try{
+      row.scrollIntoView({block:'nearest'});
+      if(window.visualViewport){
+        var vv=window.visualViewport;
+        var kb=window.innerHeight-vv.height;
+        if(kb>80){
+          var r=row.getBoundingClientRect();
+          var visibleBottom=vv.height-12;
+          if(r.bottom>visibleBottom){
+            var list=document.getElementById('tList');
+            if(list)list.scrollTop+=(r.bottom-visibleBottom);
+          }
+        }
+      }
+    }catch(e){}
+  }
+  requestAnimationFrame(scroll);setTimeout(scroll,120);setTimeout(scroll,350);setTimeout(scroll,650);
 }
 function updateHint(){
   const e1=document.querySelector('.e1');if(!e1)return;
