@@ -52,3 +52,5 @@ jobs:
           name: PebbleDo-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          # Reproducible from its commit; no reason to keep it 90 days.
+          retention-days: 1
