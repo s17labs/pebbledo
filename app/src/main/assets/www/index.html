@@ -255,10 +255,24 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
 .ab-icon{width:68px;height:68px;border-radius:18px;background-color:var(--fill);display:flex;align-items:center;justify-content:center;margin-bottom:2px;box-shadow:0 4px 16px rgba(0,0,0,.25);transition:background-color .4s ease;}
 .ab-icon i{font-size:32px;color:#fff}
 .ab-name{font-size:20px;font-weight:700;color:var(--tx);transition:color .4s ease;}
-.ab-ver{font-size:12px;color:var(--muted);transition:color .4s ease;}
+.ab-ver{font-size:12px;color:var(--muted);padding:4px 12px;border-radius:var(--r);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:color .4s ease,background-color .2s ease;}
+.ab-ver:active{background-color:var(--sel)}
 .ab-desc{font-size:13px;color:var(--muted);text-align:center;line-height:1.5;padding:0 4px;transition:color .4s ease;}
 .ab-gh{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--fill);text-decoration:none;padding:8px 16px;border-radius:var(--r);background-color:var(--sel);transition:background-color .3s ease,border-radius .25s,color .3s ease;margin-top:4px;}
 .ab-gh:active{background-color:var(--fill);color:#fff}
+
+/* ── Debug ─────────────────────────────────────────────────── */
+.dbg-info{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.dbg-kv{display:flex;justify-content:space-between;gap:10px;font-size:12px;line-height:1.45}
+.dbg-k{color:var(--ttl);flex-shrink:0;transition:color .4s ease;}
+.dbg-v{color:var(--muted);text-align:right;word-break:break-all;font-family:'SF Mono','Fira Code',monospace;font-size:10px;font-variant-numeric:tabular-nums;transition:color .4s ease;}
+.dbg-log{height:200px;overflow-y:auto;overscroll-behavior:contain;background-color:var(--sel);border-radius:var(--r);padding:8px 10px;font-family:'SF Mono','Fira Code',monospace;font-size:10px;line-height:1.5;user-select:text;-webkit-user-select:text;}
+.dbg-log::-webkit-scrollbar{display:none}
+.dbg-e{color:var(--muted);word-break:break-word;white-space:pre-wrap;transition:color .4s ease;}
+.dbg-e.dbg-err{color:#e06a6a}
+.dbg-empty{color:var(--muted);font-size:11px;text-align:center;padding-top:80px}
+.dbg-btns{display:flex;gap:8px;margin-top:12px}
+.dbg-btns .export-back-btn,.dbg-btns .export-next-btn{display:flex;align-items:center;justify-content:center;gap:6px}
 
 #ghost{position:fixed;pointer-events:none;z-index:9999;left:0;top:0;box-shadow:0 14px 44px rgba(0,0,0,.4);opacity:.92;background-color:var(--bg)}
 
@@ -589,6 +603,20 @@ input[type=range]::-moz-range-thumb:active{transform:scale(1.1)}
   </div>
 </div>
 
+<!-- DEBUG — hidden diagnostics, opened by tapping the version in About -->
+<div class="ov" id="ovDbg">
+  <div class="dlg">
+    <button class="dlg-x" id="xDbg"><i class="fa-solid fa-xmark"></i></button>
+    <p class="dlg-h" id="dbgTitle">Debug</p>
+    <div class="dbg-info" id="dbgInfo"></div>
+    <div class="dbg-log" id="dbgLog"><div class="dbg-empty">No log entries yet</div></div>
+    <div class="dbg-btns">
+      <button class="export-back-btn" id="dbgClear"><i class="fa-solid fa-broom"></i> <span id="dbgClearText">Clear log</span></button>
+      <button class="export-next-btn" id="dbgCopy"><i class="fa-solid fa-clipboard"></i> <span id="dbgCopyText">Copy log</span></button>
+    </div>
+  </div>
+</div>
+
 <!-- ONBOARDING — 5 pages, language picker first, no flags -->
 <div class="ov" id="ovOnboard">
   <div class="dlg onboard-dlg">
@@ -686,6 +714,7 @@ const T = {
     ob5Title:'Reorder & select',ob5Sub:'Drag the grip to reorder. Hold any task to multi-select, then archive or delete at once.',
     ob6Title:'Make it yours',ob6Sub:'Tap the gear for themes, fonts, radius, and to export your tasks.',
     dontShow:"Don\u2019t show again",
+    dbgTitle:'Debug',dbgCopy:'Copy log',dbgClear:'Clear log',dbgEmpty:'No log entries yet',
   },
   sk: {
     archive:'Archív',hint:'Pridaj svoju prvú úlohu\u2026',taskPh:'Úloha\u2026',
@@ -725,6 +754,7 @@ const T = {
     ob5Title:'Zoradiť a vybrať',ob5Sub:'Ťahaj za rukoväť na zoradenie. Podrž úlohu pre viacnásobný výber, potom archivuj alebo vymaž.',
     ob6Title:'Prispôsob si to',ob6Sub:'Ťukni na ozubené koliesko pre témy, písma, zaoblenie a export úloh.',
     dontShow:'Viac nezobrazovať',
+    dbgTitle:'Debug',dbgCopy:'Kopírovať log',dbgClear:'Vymazať log',dbgEmpty:'Žiadne záznamy',
   }
 };
 
@@ -732,6 +762,37 @@ function t(key,...args){
   const rec=T[lang]||T.en;
   const val=rec[key]!==undefined?rec[key]:(T.en[key]||key);
   return typeof val==='function'?val(...args):val;
+}
+
+/* ════════════════════════════════════════════
+   DEBUG LOG
+   In-memory ring buffer plus global error capture. The UI that reads
+   it (debug menu) is opened by tapping the version line in About.
+════════════════════════════════════════════ */
+const DBG_CAP=250;
+const dbgEntries=[];
+function dbgL(level,msg){
+  try{
+    const d=new Date();
+    const ts=d.toLocaleTimeString('en-GB',{hour12:false})+'.'+String(d.getMilliseconds()).padStart(3,'0');
+    dbgEntries.push({level,ts,msg:String(msg)});
+    if(dbgEntries.length>DBG_CAP)dbgEntries.splice(0,dbgEntries.length-DBG_CAP);
+  }catch(e){}
+}
+function dbgE(msg){dbgL('error',msg)}
+/* Global error capture — everything uncaught lands in the debug log. */
+window.addEventListener('error',function(ev){
+  const parts=[];if(ev&&ev.message)parts.push(String(ev.message));
+  if(ev&&ev.lineno)parts.push('line '+ev.lineno);
+  dbgE(parts.join(' \u2014 ')||'unknown error');
+});
+if('onunhandledrejection' in window){
+  window.addEventListener('unhandledrejection',function(ev){
+    let txt='unhandled rejection';
+    const r=ev&&ev.reason;
+    if(r&&(r.message||typeof r!=='object'))txt+=': '+(r.message||String(r));
+    dbgE(txt);
+  });
 }
 
 /* ════════════════════════════════════════════
@@ -771,7 +832,7 @@ function save(){
     localStorage.setItem('pd_t',JSON.stringify(tasks));
     localStorage.setItem('pd_a',JSON.stringify(archived));
     localStorage.setItem('pd_s',JSON.stringify({theme,font,fs:fontSize,r:radius,haptics,lang}));
-  }catch(e){}
+  }catch(e){dbgE('save failed: '+(e&&e.message||e))}
 }
 function scheduleSave(){clearTimeout(saveTimer);saveTimer=setTimeout(save,800)}
 function load(){
@@ -780,7 +841,7 @@ function load(){
     if(t_){const pt=JSON.parse(t_);if(Array.isArray(pt))tasks=pt.filter(x=>x&&x.id).map(x=>({id:String(x.id),text:String(x.text??'')}))}
     if(a_){const pa=JSON.parse(a_);if(Array.isArray(pa))archived=pa.filter(x=>x&&x.id).map(x=>({id:String(x.id),text:String(x.text??'')}))}
     if(s_){const p=JSON.parse(s_);theme=p.theme||'slate';font=p.font||'sys';fontSize=p.fs||16;radius=p.r!==undefined?p.r:10;haptics=p.haptics!==undefined?p.haptics:true;lang=p.lang||'en';}
-  }catch(e){}
+  }catch(e){dbgE('load failed: '+(e&&e.message||e))}
 }
 function applyAll(){
   const app=document.getElementById('app');
@@ -867,6 +928,9 @@ function applyLang(){
   document.getElementById('btnCancelDel').textContent=t('cancel');
   document.getElementById('delText').textContent=t('delBtn');
   document.getElementById('aboutDesc').textContent=t('aboutDesc');
+  document.getElementById('dbgTitle').textContent=t('dbgTitle');
+  document.getElementById('dbgCopyText').textContent=t('dbgCopy');
+  document.getElementById('dbgClearText').textContent=t('dbgClear');
   // ob1 = Welcome (ob2Title/ob2Sub), ob2 = Write (ob3Title), etc.
   // Translations embed <br> where a line break is wanted.
   document.getElementById('ob1Title').innerHTML=t('ob2Title');
@@ -1648,6 +1712,64 @@ document.addEventListener('keydown',e=>{
 document.getElementById('ghLink').addEventListener('click',e=>{if(typeof NativeBridge!=='undefined'&&NativeBridge.isNative()){e.preventDefault();NativeBridge.openUrl('https://github.com/s17labs/pebbledo')}});
 
 /* ════════════════════════════════════════════
+   DEBUG MENU — opened by tapping the version in the About dialog
+════════════════════════════════════════════ */
+function dbgInfoRows(){
+  const native=hasNB()&&NativeBridge.isNative();
+  let info={};
+  if(native){try{info=NativeBridge.getDeviceInfo()||{}}catch(e){}}
+  let storage=0;
+  try{
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);storage+=(k.length+(localStorage.getItem(k)||'').length)*2;
+    }
+  }catch(e){}
+  return [
+    ['version',info.appVersion||(document.getElementById('abVer').textContent||'').replace(/^Version\s*/i,'')],
+    ['platform',native?(info.manufacturer||'?')+' '+(info.model||'?')+' \u00b7 SDK '+(info.sdk!==undefined?info.sdk:'?'):'web browser'],
+    ['viewport',(window.innerWidth||0)+' \u00d7 '+(window.innerHeight||0)],
+    ['todos',String(tasks.length)],
+    ['archived',String(archived.length)],
+    ['storage',storage+' bytes'],
+    ['useragent',String(navigator.userAgent||'').slice(0,120)],
+  ];
+}
+function dbgDump(){
+  const head=dbgInfoRows().map(r=>r[0]+': '+r[1]).join('\n');
+  const body=dbgEntries.map(e=>'['+e.ts+'] '+e.msg).join('\n');
+  return 'PebbleDo debug\n'+head+'\n\n--- log ---\n'+(body||'(empty)');
+}
+function renderDbg(){
+  let html='';
+  dbgInfoRows().forEach(r=>{
+    html+='<div class="dbg-kv"><span class="dbg-k">'+esc(r[0])+'</span><span class="dbg-v">'+esc(r[1])+'</span></div>';
+  });
+  document.getElementById('dbgInfo').innerHTML=html;
+  const logEl=document.getElementById('dbgLog');
+  logEl.innerHTML='';
+  if(!dbgEntries.length){
+    logEl.innerHTML='<div class="dbg-empty">'+esc(t('dbgEmpty'))+'</div>';
+  }else{
+    dbgEntries.forEach(e=>{
+      const div=document.createElement('div');
+      div.className='dbg-e'+(e.level==='error'?' dbg-err':'');
+      div.textContent='['+e.ts+'] '+e.msg;
+      logEl.appendChild(div);
+    });
+  }
+  logEl.scrollTop=logEl.scrollHeight;
+}
+document.getElementById('abVer').addEventListener('click',()=>{renderDbg();vibrate(20);openDlg('ovDbg')});
+document.getElementById('xDbg').addEventListener('click',()=>closeDlg('ovDbg'));
+document.getElementById('ovDbg').addEventListener('click',e=>{if(e.target===document.getElementById('ovDbg'))closeDlg('ovDbg')});
+document.getElementById('dbgClear').addEventListener('click',()=>{dbgEntries.length=0;renderDbg();vibrate(20)});
+document.getElementById('dbgCopy').addEventListener('click',()=>{
+  copyTextToClipboard(dbgDump(),
+    ()=>{vibrate(40);toast(t('copied'))},
+    ()=>{vibrate([30,20,30]);toast(t('copyFail'))});
+});
+
+/* ════════════════════════════════════════════
    BOOT
    ════════════════════════════════════════════ */
 /* Launch gate: in the native shell the page stays hidden until the first
@@ -1660,6 +1782,16 @@ document.getElementById('ghLink').addEventListener('click',e=>{if(typeof NativeB
   setTimeout(()=>{document.body.classList.add('ready')},800);
 })();
 load();applyAll();applyLang();render(true);
+
+/* Seed the debug log with facts about this session. */
+(function(){
+  const native=hasNB()&&NativeBridge.isNative();
+  let info={};
+  if(native){try{info=NativeBridge.getDeviceInfo()||{}}catch(e){}}
+  dbgL('dbg','boot v'+(info.appVersion||'dev')+
+    (native?' \u00b7 '+(info.manufacturer||'?')+' '+(info.model||'?')+' SDK '+(info.sdk!==undefined?info.sdk:'?'):' \u00b7 web')+
+    ' \u00b7 '+tasks.length+' todos, '+archived.length+' archived');
+})();
 
 // Show the real app version from the native package when available.
 if(hasNB()&&NativeBridge.isNative()){
